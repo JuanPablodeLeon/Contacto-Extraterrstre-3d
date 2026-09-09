@@ -69,3 +69,6 @@ ESC: '\\"' | '\\\\' ;
 //Comentarios
 LINE_COMMENT: '//' .*? '\r'? '\n' -> skip;
 BLOCK_COMMENT: '/*' .*? '*/' -> skip;
+
+NEWLINE: '\r'?'\n' | '\r';
+TAB: [\t]+;
