@@ -8,22 +8,59 @@ import java.awt.event.ComponentEvent;
 
 public class MainPanel extends JPanel {
 
-    public MainPanel(JTextArea textArea, JTabbedPane DownOptions){
+    public MainPanel(JTabbedPane editorTabs, ProjectExplorerPanel explorer, JTabbedPane DownOptions){
         setLayout(new BorderLayout());
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, textArea, DownOptions);
-        splitPane.setResizeWeight(0.67);
-        splitPane.setContinuousLayout(true);
-        splitPane.setBorder(new EmptyBorder(10,10,10,10));
+        for (int i = 0; i < DownOptions.getTabCount(); i++) {
+            Component tab = DownOptions.getComponentAt(i);
+            JTextArea area = findTextArea(tab);
+            if (area != null) styleOutputArea(area);
+        }
+
+        JSplitPane verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorTabs, DownOptions);
+        verticalSplit.setResizeWeight(0.67);
+        verticalSplit.setContinuousLayout(true);
+        verticalSplit.setBorder(new EmptyBorder(10,10,10,10));
 
         // Posicion inicial proporcional
-        splitPane.addComponentListener(new ComponentAdapter() {
+        verticalSplit.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                splitPane.setDividerLocation(0.67);
-                splitPane.removeComponentListener(this);
+                verticalSplit.setDividerLocation(0.67);
+                verticalSplit.removeComponentListener(this);
             }
         });
-        add(splitPane, BorderLayout.CENTER);
+
+        explorer.setPreferredSize(new Dimension(220,0));
+
+        JSplitPane horizontalSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, explorer, verticalSplit);
+        horizontalSplit.setResizeWeight(0.0);
+        horizontalSplit.setContinuousLayout(true);
+        horizontalSplit.setDividerLocation(220);
+
+        add(verticalSplit, BorderLayout.CENTER);
+    }
+
+    private void styleOutputArea(JTextArea area) {
+        area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        area.setBackground(Color.darkGray);
+        area.setForeground(Color.lightGray);
+        area.setCaretColor(Color.darkGray);
+        area.setEditable(false);
+        area.setBorder(new EmptyBorder(10, 10, 10, 10));
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+    }
+
+    private static JTextArea findTextArea(Component tab) {
+        if (tab instanceof JScrollPane scroll){
+            JViewport vp = scroll.getViewport();
+            if (vp != null && vp.getView() instanceof JTextArea area){
+                return area;
+            }
+        } else if (tab instanceof JTextArea area) {
+            return area;
+        }
+        return null;
     }
 }

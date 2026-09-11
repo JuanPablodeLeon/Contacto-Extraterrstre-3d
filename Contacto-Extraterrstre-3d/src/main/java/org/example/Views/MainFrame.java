@@ -31,7 +31,7 @@ public class MainFrame extends JFrame {
         tabbedPaneDown.add("Codigo 3 Direcciones", codigo3DirireccionesTextArea);
         tabbedPaneDown.add("Codigo C", codigoCTextArea);
 
-        add(new MainPanel(editorPendiente, tabbedPaneDown));
+       // add(new MainPanel(editorPendiente, tabbedPaneDown));
         setVisible(true);
     }
 
