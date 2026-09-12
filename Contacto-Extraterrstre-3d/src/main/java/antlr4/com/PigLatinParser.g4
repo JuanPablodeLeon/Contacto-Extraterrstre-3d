@@ -5,21 +5,33 @@ import PigLatinLexer;
 inicio: instrucciones? EOF
       ;
 
-instrucciones: bloque_imports* bloque_vars* bloque_main FINISUP PUNTO_COMA
+instrucciones: bloque_imports* vars_par? bloque_main FINISUP PUNTO_COMA
              ;
 
 bloque_imports: IMPORT ID PUNTO ID PUNTO ID
               ;
 
+vars_par: VARIABILES bloque_vars*
+        ;
+
+        // esto <id> : <tipo> <valor> ;
 bloque_vars: ESTO ID DOS_PUNTOS tipos expresion PUNTO_COMA
-           // arrays
+          // esto <id> : <valor> ; <- Solo para expresiones booleanas
+           | ESTO ID DOS_PUNTOS expresion PUNTO_COMA
+           // -------------- ARRAYS -----------------------
+          // series <id>[<valor>] : <tipo> {...} ;
            | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS tipos_varios LLLAVE bloque_varios RLLAVE PUNTO_COMA
+          // series <id>[<valor>] : <tipo> ;
            | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS tipos_varios PUNTO_COMA
-           // estructuras
+           // -------------- ESTRUCTURAS ---------------------
+          // esto <id> : <id_estructura> {...} ;
            | ESTO ID DOS_PUNTOS ID LLLAVE bloque_varios RLLAVE PUNTO_COMA
+          // series <id>[<valor>] : <id_estrucura> ;
            | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS tipos_varios PUNTO_COMA
-           //Objetos
-           | ESTO ID DOS_PUNTOS NOVUS ID LPAREN bloque_objt RPAREN PUNTO_COMA
+           // ---------------- OBJETOS -----------------------
+          // esto <id> : novus <id_objeto>(...) ;
+           | ESTO ID DOS_PUNTOS NOVUS ID LPAREN bloque_objt? RPAREN PUNTO_COMA
+          // series <id>·[<valor>] : <id_objeto> ;
            | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS ID PUNTO_COMA
            ;
 
@@ -27,10 +39,10 @@ tipos_varios: tipos
            | ID
            ;
 
-bloque_varios: expresion (COMA expresion)*
+bloque_varios: (expresion | LLLAVE bloque_varios RLLAVE)  (COMA (expresion | LLLAVE bloque_varios RLLAVE))*
              ;
 
-bloque_objt: (expresion | NOVUS ID LPAREN bloque_objt RPAREN) (COMA (expresion | NOVUS ID LPAREN bloque_objt RPAREN))*
+bloque_objt: (expresion | NOVUS ID LPAREN bloque_objt? RPAREN) (COMA (expresion | NOVUS ID LPAREN bloque_objt? RPAREN))*
            ;
 
 
@@ -39,14 +51,14 @@ bloque_main: MAIOR instruccion*
 
 instruccion: bloque_impr
            | bloque_leer
-           | expresion
+           | expresion PUNTO_COMA?
            | SI LPAREN expresion RPAREN LLLAVE instruccion* RLLAVE bloque_si* FINIS PUNTO_COMA
            | DUM LPAREN expresion RPAREN LLLAVE instruccion RLLAVE FINIS PUNTO_COMA
            | FACERE LLLAVE instruccion RLLAVE DUM LPAREN expresion RPAREN PUNTO_COMA
-           | PER LPAREN ESTO ID DOS_PUNTOS tipos expresion PUNTO_COMA expresion PUNTO_COMA auto_cambio RPAREN LLLAVE instruccion RLLAVE
+           | PER LPAREN ESTO ID DOS_PUNTOS tipos expresion PUNTO_COMA expresion PUNTO_COMA auto_cambio RPAREN LLLAVE instruccion+ RLLAVE
            | bloque_asignacion
-           | PERGE
-           | INTERRUMPE
+           | PERGE PUNTO_COMA
+           | INTERRUMPE PUNTO_COMA
            ;
 
 bloque_si: ALITER (LPAREN expresion RPAREN)? LLLAVE instruccion* RLLAVE
@@ -60,18 +72,24 @@ bloque_impr: IMPRIMIR expresion (IMPRIMIR expresion)* PUNTO_COMA # Impresion_Con
 bloque_leer: ID? LEER # Lectura_Texto
         ;
 
+                // <id> = <valor> ;
 bloque_asignacion: ID ASIGNACION expresion PUNTO_COMA
+                // <id>[<index>] = <valor> ;
                  | ID LCORCH expresion RCORCH ASIGNACION expresion PUNTO_COMA
+                // <id>.<id> = <valor> ;
                  | ID PUNTO ID ASIGNACION expresion PUNTO_COMA
+                // <id>[<index>].<id> = <valor> ;
                  | ID LCORCH expresion RCORCH PUNTO ID ASIGNACION expresion PUNTO_COMA
                  | auto_cambio PUNTO_COMA
                  ;
 
+           // <id> ++
 auto_cambio: ID SUMA_INCR
+          // <id> --
            | ID RESTA_DECR
            ;
 
-        // -<valor>
+        // - <valor>
 expresion: RESTA expresion # Umenos
         // non <valor>
          | NON expresion # Negacion
@@ -91,12 +109,16 @@ expresion: RESTA expresion # Umenos
          | expresion ops1=(AND | OR) expresion # AndOr
        // <id>[<valor>]
          | ID LCORCH expresion RCORCH # Llamada_Elemento_Series
+        // <id>.<id>[<valor>].<id>(...)
+         | ID PUNTO ID LCORCH expresion RCORCH PUNTO ID LPAREN (expresion (COMA expresion)* )? RPAREN # Llmada_Elemnto_FUnc_Serie
        // <id_structura>.<id_propiedad>
          | ID PUNTO ID # Llamada_Propiedad_Structura
+       // <id>.<id>(...)
+         | ID PUNTO ID LPAREN (expresion (COMA expresion)* )? RPAREN # LLamada_Propiedad_Funcion
          // <id> (...)
-         | ID LPAREN (expresion (COMA expresion)* )* RPAREN # Llamada_Actio_Exp
+         | ID LPAREN (expresion (COMA expresion)* )? RPAREN # Llamada_Actio_Exp
         // <tipo> <id> (...)
-         | tipos ID LPAREN (expresion (COMA expresion)* )* RPAREN # Llamada_Ratio_Tipo
+         | tipos ID LPAREN (expresion (COMA expresion)* )? RPAREN # Llamada_Ratio_Tipo
        // <id>[<valor>].<id>
          | ID LCORCH expresion RCORCH PUNTO ID # Llamada_Series_Structura
          | VERUM # VerumValor
