@@ -38,7 +38,15 @@ public class MainPanel extends JPanel {
         horizontalSplit.setContinuousLayout(true);
         horizontalSplit.setDividerLocation(220);
 
-        add(verticalSplit, BorderLayout.CENTER);
+        add(horizontalSplit, BorderLayout.CENTER);
+    }
+
+    public MainPanel(JTabbedPane editorTabs, ProjectExplorerPanel explorer, JTextArea consoleTextArea) {
+        this(editorTabs, explorer, wrapInTabs(consoleTextArea));
+    }
+
+    public MainPanel(JPanel editorPanel, JTextArea consoleTextArea) {
+        this(new JTabbedPane(), new ProjectExplorerPanel(), consoleTextArea);
     }
 
     private void styleOutputArea(JTextArea area) {
@@ -62,5 +70,11 @@ public class MainPanel extends JPanel {
             return area;
         }
         return null;
+    }
+
+    private static JTabbedPane wrapInTabs(JTextArea consoleTextArea) {
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.add("Consola", new JScrollPane(consoleTextArea));
+        return tabs;
     }
 }

@@ -109,7 +109,7 @@ public class ProjectManager {
         File f = new File(projectDir, name);
         if (f.exists()) throw new IOException("Existe archivo con ese nombre: "+name);
 
-        Files.writeString(f.toPath(), "", StandardCharsets.UTF_8);
+        Files.writeString(f.toPath(), initialContentZFile(f), StandardCharsets.UTF_8);
         writeXml();
         return f;
     }
@@ -173,7 +173,7 @@ public class ProjectManager {
     }
 
     private void createEmptyFile(File file) throws  IOException{
-        if (!file.exists()) Files.writeString(file.toPath(), "", StandardCharsets.UTF_8);
+        if (!file.exists()) Files.writeString(file.toPath(), initialContentZFile(file), StandardCharsets.UTF_8);
     }
 
     private String sanitizeTag(String name) {
@@ -208,5 +208,14 @@ public class ProjectManager {
 
     public boolean hasProject(){
         return projectDir != null && projectDir.isDirectory();
+    }
+
+    private static String initialContentZFile(File f){
+        String name = f.getName();
+        if (name.toLowerCase().endsWith(EXT_Z)){
+            name = name.substring(0,name.length() - 2 );
+            return "public class "+ name + "{\n\n\n}";
+        }
+        return "";
     }
 }

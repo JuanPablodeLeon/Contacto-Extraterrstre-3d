@@ -9,6 +9,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class ProjectExplorerPanel extends JPanel {
@@ -39,17 +40,20 @@ public class ProjectExplorerPanel extends JPanel {
         tree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                super.mouseClicked(e);
+                if (e.getClickCount() == 2 && onOpenFile != null){
+                    File f = getFileAt(e.getX(), e.getY());
+                    if (f != null && f.isFile()) onOpenFile.accept(f);
+                }
             }
 
             @Override
             public void mousePressed(MouseEvent e) {
-                super.mousePressed(e);
+                maybeShowPopup(e);
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                super.mouseReleased(e);
+                maybeShowPopup(e);
             }
 
             private void maybeShowPopup(MouseEvent e){
@@ -85,4 +89,96 @@ public class ProjectExplorerPanel extends JPanel {
         }
     }
 
+    private void showPopUp(int x, int y, File target){
+        JPopupMenu popup = new JPopupMenu();
+
+        JMenu nuevoMenu = new JMenu("Nuevo archivo");
+
+        JMenuItem pigItem = new JMenuItem("Archivo PigLatin (.pig)");
+        JMenuItem yItem = new JMenuItem("Archivo YFile (.y)");
+        JMenuItem zItem = new JMenuItem("Archivo Zetariano (.z)");
+        pigItem.addActionListener(e -> {
+            if(onNewFile != null) onNewFile.accept(ProjectManager.EXT_PGL);
+        });
+        yItem.addActionListener(e -> {
+            if(onNewFile != null) onNewFile.accept(ProjectManager.EXT_Y);
+        });
+        zItem.addActionListener(e -> {
+            if(onNewFile != null) onNewFile.accept(ProjectManager.EXT_Z);
+        });
+
+        nuevoMenu.add(pigItem);
+        nuevoMenu.add(yItem);
+        nuevoMenu.add(zItem);
+        popup.add(nuevoMenu);
+
+        if (target != null && target.isFile()){
+            popup.addSeparator();
+
+            JMenuItem abrirItem = new JMenuItem("Abrir");
+            abrirItem.addActionListener(e ->{
+                if (onOpenFile != null) onOpenFile.accept(target);
+            });
+
+            JMenuItem renameItem = new JMenuItem("Renombrar");
+            renameItem.addActionListener(e ->{
+                if (onOpenFile != null) onOpenFile.accept(target);
+            });
+
+            popup.add(abrirItem);
+            popup.add(renameItem);
+        }
+        popup.show(tree, x, y);
+    }
+
+    public void setProjectManager(ProjectManager pm){
+        this.projectManager = pm;
+        refresh();
+    }
+
+    public void refresh(){
+        rootNode.removeAllChildren();
+
+        if (projectManager == null || !projectManager.hasProject()){
+            rootNode.setUserObject("Sin proyecto Cartado");
+            treeMododel.reload();
+            expandRoot();
+            return;
+        }
+        File dir = projectManager.getProjectDir();
+        rootNode.setUserObject(new FileNode(projectManager.getProjectName(), dir, true));
+        List<File> files = projectManager.listProjectFiles();
+        for (File f : files){
+            DefaultMutableTreeNode child = new DefaultMutableTreeNode(new FileNode(f.getName(), f, false));
+            rootNode.add(child);
+        }
+        treeMododel.reload();
+        expandRoot();
+    }
+
+    private void expandRoot(){
+        tree.expandPath(new TreePath(rootNode.getPath()));
+    }
+
+    public void setOnOpenFile(Consumer<File> onOpenFile){
+        this.onOpenFile = onOpenFile;
+    }
+
+    public void setOnNewFile(Consumer<String> onNewFile){
+        this.onNewFile = onNewFile;
+    }
+
+    public void setOnRenameFile(Consumer<File> onRenameFile){
+        this.onRenameFile = onRenameFile;
+    }
+
+    private File getFileAt(int x, int y){
+        TreePath path = tree.getPathForLocation(x, y);
+        if (path == null) return null;
+
+        Object last = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
+        if (last instanceof FileNode fn) return  fn.file();
+
+        return null;
+    }
 }
