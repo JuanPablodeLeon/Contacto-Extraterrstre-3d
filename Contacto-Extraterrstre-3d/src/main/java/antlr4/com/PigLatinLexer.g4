@@ -22,6 +22,8 @@ DUM: 'dum';
 FACERE: 'facere';
 PER: 'per';
 NON: 'non';
+PERGE: 'perge';
+INTERRUMPE: 'interrumpe';
 
 //SIGNOS RESERVADOS
 IMPRIMIR: '>>';

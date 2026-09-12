@@ -13,16 +13,25 @@ bloque_imports: IMPORT ID PUNTO ID PUNTO ID
 
 bloque_vars: ESTO ID DOS_PUNTOS tipos expresion PUNTO_COMA
            // arrays
-           | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS tipos_array LLLAVE bloque_arrays RLLAVE PUNTO_COMA
-           | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS tipos_array PUNTO_COMA
+           | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS tipos_varios LLLAVE bloque_varios RLLAVE PUNTO_COMA
+           | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS tipos_varios PUNTO_COMA
            // estructuras
-           | ESTO ID DOS_PUNTOS ID LLLAVE bloque_estruc RLLAVE PUNTO_COMA
-           | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS tipos_estruc PUNTO_COMA
+           | ESTO ID DOS_PUNTOS ID LLLAVE bloque_varios RLLAVE PUNTO_COMA
+           | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS tipos_varios PUNTO_COMA
            //Objetos
            | ESTO ID DOS_PUNTOS NOVUS ID LPAREN bloque_objt RPAREN PUNTO_COMA
            | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS ID PUNTO_COMA
            ;
 
+tipos_varios: tipos
+           | ID
+           ;
+
+bloque_varios: expresion (COMA expresion)*
+             ;
+
+bloque_objt: (expresion | NOVUS ID LPAREN bloque_objt RPAREN) (COMA (expresion | NOVUS ID LPAREN bloque_objt RPAREN))*
+           ;
 
 
 bloque_main: MAIOR instruccion*
@@ -31,7 +40,35 @@ bloque_main: MAIOR instruccion*
 instruccion: bloque_impr
            | bloque_leer
            | expresion
-           | SI
+           | SI LPAREN expresion RPAREN LLLAVE instruccion* RLLAVE bloque_si* FINIS PUNTO_COMA
+           | DUM LPAREN expresion RPAREN LLLAVE instruccion RLLAVE FINIS PUNTO_COMA
+           | FACERE LLLAVE instruccion RLLAVE DUM LPAREN expresion RPAREN PUNTO_COMA
+           | PER LPAREN ESTO ID DOS_PUNTOS tipos expresion PUNTO_COMA expresion PUNTO_COMA auto_cambio RPAREN LLLAVE instruccion RLLAVE
+           | bloque_asignacion
+           | PERGE
+           | INTERRUMPE
+           ;
+
+bloque_si: ALITER (LPAREN expresion RPAREN)? LLLAVE instruccion* RLLAVE
+         ;
+
+        // >> <valor> ; | >> <valor>  ...  >> <valor> ;
+bloque_impr: IMPRIMIR expresion (IMPRIMIR expresion)* PUNTO_COMA # Impresion_Consola
+        ;
+
+      // <id> << | <<
+bloque_leer: ID? LEER # Lectura_Texto
+        ;
+
+bloque_asignacion: ID ASIGNACION expresion PUNTO_COMA
+                 | ID LCORCH expresion RCORCH ASIGNACION expresion PUNTO_COMA
+                 | ID PUNTO ID ASIGNACION expresion PUNTO_COMA
+                 | ID LCORCH expresion RCORCH PUNTO ID ASIGNACION expresion PUNTO_COMA
+                 | auto_cambio PUNTO_COMA
+                 ;
+
+auto_cambio: ID SUMA_INCR
+           | ID RESTA_DECR
            ;
 
         // -<valor>
@@ -70,3 +107,10 @@ expresion: RESTA expresion # Umenos
          | CHARS # CharVal
          | STRING # StringVal
          ;
+
+tipos: NUMERUS
+     | TEXTUM
+     | BOOL
+     | DECIMALIS
+     | LITTERA
+     ;
