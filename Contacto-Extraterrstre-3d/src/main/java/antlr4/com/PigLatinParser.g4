@@ -52,16 +52,16 @@ bloque_main: MAIOR instruccion*
 instruccion: bloque_impr
            | bloque_leer
            | expresion PUNTO_COMA?
-           | SI LPAREN expresion RPAREN LLLAVE instruccion* RLLAVE bloque_si* FINIS PUNTO_COMA
-           | DUM LPAREN expresion RPAREN LLLAVE instruccion RLLAVE FINIS PUNTO_COMA
-           | FACERE LLLAVE instruccion RLLAVE DUM LPAREN expresion RPAREN PUNTO_COMA
+           | SI LPAREN expresion RPAREN LLLAVE instruccion* RLLAVE bloque_si? FINIS PUNTO_COMA
+           | DUM LPAREN expresion RPAREN LLLAVE instruccion+ RLLAVE FINIS PUNTO_COMA
+           | FACERE LLLAVE instruccion+ RLLAVE DUM LPAREN expresion RPAREN PUNTO_COMA
            | PER LPAREN ESTO ID DOS_PUNTOS tipos expresion PUNTO_COMA expresion PUNTO_COMA auto_cambio RPAREN LLLAVE instruccion+ RLLAVE
            | bloque_asignacion
            | PERGE PUNTO_COMA
            | INTERRUMPE PUNTO_COMA
            ;
 
-bloque_si: ALITER (LPAREN expresion RPAREN)? LLLAVE instruccion* RLLAVE
+bloque_si: (ALITER LPAREN expresion RPAREN LLLAVE instruccion* RLLAVE)* (ALITER LLLAVE instruccion* RLLAVE)?
          ;
 
         // >> <valor> ; | >> <valor>  ...  >> <valor> ;
@@ -121,6 +121,8 @@ expresion: RESTA expresion # Umenos
          | tipos ID LPAREN (expresion (COMA expresion)* )? RPAREN # Llamada_Ratio_Tipo
        // <id>[<valor>].<id>
          | ID LCORCH expresion RCORCH PUNTO ID # Llamada_Series_Structura
+        // <id>.<id>[<valor>]
+         | ID PUNTO ID LCORCH expresion RCORCH # Llamada_Series_Valor
          | VERUM # VerumValor
          | FALSUS # FalsusValor
          | ID # Identificador
