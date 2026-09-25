@@ -25,6 +25,7 @@ IMPRIMIR: 'imprimir';
 LEER: 'leer';
 VERDADERO: 'verdadero';
 FALSO: 'falso';
+RETORNAR: 'retornar';
 
 //SIGNOS RESERVADOS
 RETORNO_FUNC: '->';
