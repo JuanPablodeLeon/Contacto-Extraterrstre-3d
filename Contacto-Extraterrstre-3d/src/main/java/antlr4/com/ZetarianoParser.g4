@@ -74,10 +74,13 @@ asignacion: ID SUMA_IGL expresion PUNTO_COMA
           | ID MULT_IGL expresion PUNTO_COMA
         // <id> = (<exp bool>) ? <exp> : <exp> ;
           | ID ASIGNACION LPAREN expresion RPAREN INTERRG expresion DOS_PUNTOS expresion PUNTO_COMA
-        // <id>[<value>] = <valor>
+        // <id>[<value>] = <valor> ;
           | ID LCORCH expresion RCORCH ASIGNACION expresion PUNTO_COMA
+        // <id> = <valor> ;
           | ID ASIGNACION expresion PUNTO_COMA
+        // <id> ++ ;
           | ID INCREMENTO PUNTO_COMA
+        // <id> -- ;
           | ID DECREMENTO PUNTO_COMA
           ;
 
@@ -89,12 +92,17 @@ params: expresion (COMA expresion)*
 param_var: (tipos | ID) expresion ((tipos | ID) expresion)*
          ;
 
-        //
+        // - <valor>
 expresion: RESTA expresion
+        // ! <exp>
          | NOT expresion
+        // (...)
          | LPAREN expresion RPAREN
+       // <valor> * / <valor>
          | expresion (MULT | DIV) expresion
+       // <valor> % <valor>
          | expresion MOD expresion
+       // <valor> + - <valor>
          | expresion (SUMA | RESTA) expresion
          // <valor> (== !=) <valor>
          | expresion ops1=(IGUAL | NO_IGUAL) expresion //# IgualNoIgual
