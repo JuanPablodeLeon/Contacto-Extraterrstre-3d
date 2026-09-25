@@ -25,6 +25,7 @@ DO: 'do';
 PRINTLN: 'println';
 PRINT: 'print';
 READLN: 'readln';
+NULL_VAL: 'null';
 
 LPAREN: '(';
 RPAREN: ')';
@@ -58,6 +59,7 @@ RESTA: '-';
 MULT: '*';
 DIV: '/';
 MOD: '%';
+ASIGNACION: '=';
 
 ID: [a-zA-Z_][a-zA-Z_0-9]*;
 INTEGER: [0-9]+;
@@ -68,6 +70,6 @@ ESC: '\\"' | '\\\\' ;
 
 //Comentarios
 LINE_COMMENT: '//' .*? '\r'? '\n' -> skip;
-BLOCK_COMMENT: '##' .*? '##' -> skip;
+BLOCK_COMMENT: '/*' .*? '*/' -> skip;
 
 WS: [ \t\r\n]+ -> skip;
