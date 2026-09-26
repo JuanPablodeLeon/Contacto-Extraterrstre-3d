@@ -1,170 +1,160 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
  * This interface defines a complete listener for a parse tree produced by
- * {@link YLenguajeParserParser}.
+ * {@link YLenguajeParser}.
  */
 public interface YLenguajeParserListener extends ParseTreeListener {
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#inicio}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#inicio}.
 	 * @param ctx the parse tree
 	 */
-	void enterInicio(YLenguajeParserParser.InicioContext ctx);
+	void enterInicio(YLenguajeParser.InicioContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#inicio}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#inicio}.
 	 * @param ctx the parse tree
 	 */
-	void exitInicio(YLenguajeParserParser.InicioContext ctx);
+	void exitInicio(YLenguajeParser.InicioContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#instruccion}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#bloq_estruc}.
 	 * @param ctx the parse tree
 	 */
-	void enterInstruccion(YLenguajeParserParser.InstruccionContext ctx);
+	void enterBloq_estruc(YLenguajeParser.Bloq_estrucContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#instruccion}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#bloq_estruc}.
 	 * @param ctx the parse tree
 	 */
-	void exitInstruccion(YLenguajeParserParser.InstruccionContext ctx);
+	void exitBloq_estruc(YLenguajeParser.Bloq_estrucContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#bloq_estruc}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#esctruc}.
 	 * @param ctx the parse tree
 	 */
-	void enterBloq_estruc(YLenguajeParserParser.Bloq_estrucContext ctx);
+	void enterEsctruc(YLenguajeParser.EsctrucContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#bloq_estruc}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#esctruc}.
 	 * @param ctx the parse tree
 	 */
-	void exitBloq_estruc(YLenguajeParserParser.Bloq_estrucContext ctx);
+	void exitEsctruc(YLenguajeParser.EsctrucContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#esctruc}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#bloq_func}.
 	 * @param ctx the parse tree
 	 */
-	void enterEsctruc(YLenguajeParserParser.EsctrucContext ctx);
+	void enterBloq_func(YLenguajeParser.Bloq_funcContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#esctruc}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#bloq_func}.
 	 * @param ctx the parse tree
 	 */
-	void exitEsctruc(YLenguajeParserParser.EsctrucContext ctx);
+	void exitBloq_func(YLenguajeParser.Bloq_funcContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#bloq_func}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#bloc_func}.
 	 * @param ctx the parse tree
 	 */
-	void enterBloq_func(YLenguajeParserParser.Bloq_funcContext ctx);
+	void enterBloc_func(YLenguajeParser.Bloc_funcContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#bloq_func}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#bloc_func}.
 	 * @param ctx the parse tree
 	 */
-	void exitBloq_func(YLenguajeParserParser.Bloq_funcContext ctx);
+	void exitBloc_func(YLenguajeParser.Bloc_funcContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#bloc_func}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#params}.
 	 * @param ctx the parse tree
 	 */
-	void enterBloc_func(YLenguajeParserParser.Bloc_funcContext ctx);
+	void enterParams(YLenguajeParser.ParamsContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#bloc_func}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#params}.
 	 * @param ctx the parse tree
 	 */
-	void exitBloc_func(YLenguajeParserParser.Bloc_funcContext ctx);
+	void exitParams(YLenguajeParser.ParamsContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#params}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#bloc_llaves}.
 	 * @param ctx the parse tree
 	 */
-	void enterParams(YLenguajeParserParser.ParamsContext ctx);
+	void enterBloc_llaves(YLenguajeParser.Bloc_llavesContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#params}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#bloc_llaves}.
 	 * @param ctx the parse tree
 	 */
-	void exitParams(YLenguajeParserParser.ParamsContext ctx);
+	void exitBloc_llaves(YLenguajeParser.Bloc_llavesContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#bloc_llaves}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#val_arreglo}.
 	 * @param ctx the parse tree
 	 */
-	void enterBloc_llaves(YLenguajeParserParser.Bloc_llavesContext ctx);
+	void enterVal_arreglo(YLenguajeParser.Val_arregloContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#bloc_llaves}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#val_arreglo}.
 	 * @param ctx the parse tree
 	 */
-	void exitBloc_llaves(YLenguajeParserParser.Bloc_llavesContext ctx);
+	void exitVal_arreglo(YLenguajeParser.Val_arregloContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#val_arreglo}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#instrucciones}.
 	 * @param ctx the parse tree
 	 */
-	void enterVal_arreglo(YLenguajeParserParser.Val_arregloContext ctx);
+	void enterInstrucciones(YLenguajeParser.InstruccionesContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#val_arreglo}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#instrucciones}.
 	 * @param ctx the parse tree
 	 */
-	void exitVal_arreglo(YLenguajeParserParser.Val_arregloContext ctx);
+	void exitInstrucciones(YLenguajeParser.InstruccionesContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#instrucciones}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#bloc_si}.
 	 * @param ctx the parse tree
 	 */
-	void enterInstrucciones(YLenguajeParserParser.InstruccionesContext ctx);
+	void enterBloc_si(YLenguajeParser.Bloc_siContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#instrucciones}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#bloc_si}.
 	 * @param ctx the parse tree
 	 */
-	void exitInstrucciones(YLenguajeParserParser.InstruccionesContext ctx);
+	void exitBloc_si(YLenguajeParser.Bloc_siContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#bloc_si}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#bloque}.
 	 * @param ctx the parse tree
 	 */
-	void enterBloc_si(YLenguajeParserParser.Bloc_siContext ctx);
+	void enterBloque(YLenguajeParser.BloqueContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#bloc_si}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#bloque}.
 	 * @param ctx the parse tree
 	 */
-	void exitBloc_si(YLenguajeParserParser.Bloc_siContext ctx);
+	void exitBloque(YLenguajeParser.BloqueContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#bloque}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#definiciones}.
 	 * @param ctx the parse tree
 	 */
-	void enterBloque(YLenguajeParserParser.BloqueContext ctx);
+	void enterDefiniciones(YLenguajeParser.DefinicionesContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#bloque}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#definiciones}.
 	 * @param ctx the parse tree
 	 */
-	void exitBloque(YLenguajeParserParser.BloqueContext ctx);
+	void exitDefiniciones(YLenguajeParser.DefinicionesContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#definiciones}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#asignaciones}.
 	 * @param ctx the parse tree
 	 */
-	void enterDefiniciones(YLenguajeParserParser.DefinicionesContext ctx);
+	void enterAsignaciones(YLenguajeParser.AsignacionesContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#definiciones}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#asignaciones}.
 	 * @param ctx the parse tree
 	 */
-	void exitDefiniciones(YLenguajeParserParser.DefinicionesContext ctx);
+	void exitAsignaciones(YLenguajeParser.AsignacionesContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#asignaciones}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#expresion}.
 	 * @param ctx the parse tree
 	 */
-	void enterAsignaciones(YLenguajeParserParser.AsignacionesContext ctx);
+	void enterExpresion(YLenguajeParser.ExpresionContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#asignaciones}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#expresion}.
 	 * @param ctx the parse tree
 	 */
-	void exitAsignaciones(YLenguajeParserParser.AsignacionesContext ctx);
+	void exitExpresion(YLenguajeParser.ExpresionContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#expresion}.
+	 * Enter a parse tree produced by {@link YLenguajeParser#tipos}.
 	 * @param ctx the parse tree
 	 */
-	void enterExpresion(YLenguajeParserParser.ExpresionContext ctx);
+	void enterTipos(YLenguajeParser.TiposContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#expresion}.
+	 * Exit a parse tree produced by {@link YLenguajeParser#tipos}.
 	 * @param ctx the parse tree
 	 */
-	void exitExpresion(YLenguajeParserParser.ExpresionContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link YLenguajeParserParser#tipos}.
-	 * @param ctx the parse tree
-	 */
-	void enterTipos(YLenguajeParserParser.TiposContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link YLenguajeParserParser#tipos}.
-	 * @param ctx the parse tree
-	 */
-	void exitTipos(YLenguajeParserParser.TiposContext ctx);
+	void exitTipos(YLenguajeParser.TiposContext ctx);
 }

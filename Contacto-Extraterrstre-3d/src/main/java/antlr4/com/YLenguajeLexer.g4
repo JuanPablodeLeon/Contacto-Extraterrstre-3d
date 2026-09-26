@@ -1,5 +1,8 @@
 lexer grammar YLenguajeLexer;
 
+// Tokens sinteticos para identacion
+tokens { INDENT, DEDENT }
+
 //PALABRAS RESERVADAS
 ESTRUCTURAS: '%estructuras';
 ESTRUCTURA: 'estructura';
@@ -63,15 +66,13 @@ DIV: '/';
 ID: [a-zA-Z_][a-zA-Z0-9_]*;
 INT: [0-9]+;
 DECIMAL: INT '.' INT;
-STRING: '"' (ESC|.)*? '"';
-CHAR: '\'' [a-z-A-Z] '\'';
-ESC: '\\"' | '\\\\' ;
+STRING: '"' (ESC | ~["\\\r\n])* '"';
+CHAR: '\'' [a-zA-Z] '\'';
+fragment ESC: '\\"' | '\\\\' | '\\n' | '\\t' | '\\r';
 
-//Comentarios
-LINE_COMMENT: '//' .*? '\r'? '\n' -> skip;
-BLOCK_COMMENT: '/*' .*? '*/' -> skip;
+LINE_COMMENT: '//' ~[\r\n]* -> channel(HIDDEN);
+BLOCK_COMMENT: '/*' .*? '*/' -> channel(HIDDEN);
 
-NEWLINE: '\r'?'\n' | '\r';
-TAB: [\t]+;
+NEWLINE: ('\r'? '\n' | '\r') [ \t]*;
 
-WS: ' '+ -> skip;
+WS: [ \t]+ -> skip;

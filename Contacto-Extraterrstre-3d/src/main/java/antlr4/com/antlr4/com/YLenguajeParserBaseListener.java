@@ -1,4 +1,4 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -17,193 +17,181 @@ public class YLenguajeParserBaseListener implements YLenguajeParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterInicio(YLenguajeParserParser.InicioContext ctx) { }
+	@Override public void enterInicio(YLenguajeParser.InicioContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitInicio(YLenguajeParserParser.InicioContext ctx) { }
+	@Override public void exitInicio(YLenguajeParser.InicioContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterInstruccion(YLenguajeParserParser.InstruccionContext ctx) { }
+	@Override public void enterBloq_estruc(YLenguajeParser.Bloq_estrucContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitInstruccion(YLenguajeParserParser.InstruccionContext ctx) { }
+	@Override public void exitBloq_estruc(YLenguajeParser.Bloq_estrucContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBloq_estruc(YLenguajeParserParser.Bloq_estrucContext ctx) { }
+	@Override public void enterEsctruc(YLenguajeParser.EsctrucContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBloq_estruc(YLenguajeParserParser.Bloq_estrucContext ctx) { }
+	@Override public void exitEsctruc(YLenguajeParser.EsctrucContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterEsctruc(YLenguajeParserParser.EsctrucContext ctx) { }
+	@Override public void enterBloq_func(YLenguajeParser.Bloq_funcContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitEsctruc(YLenguajeParserParser.EsctrucContext ctx) { }
+	@Override public void exitBloq_func(YLenguajeParser.Bloq_funcContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBloq_func(YLenguajeParserParser.Bloq_funcContext ctx) { }
+	@Override public void enterBloc_func(YLenguajeParser.Bloc_funcContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBloq_func(YLenguajeParserParser.Bloq_funcContext ctx) { }
+	@Override public void exitBloc_func(YLenguajeParser.Bloc_funcContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBloc_func(YLenguajeParserParser.Bloc_funcContext ctx) { }
+	@Override public void enterParams(YLenguajeParser.ParamsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBloc_func(YLenguajeParserParser.Bloc_funcContext ctx) { }
+	@Override public void exitParams(YLenguajeParser.ParamsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterParams(YLenguajeParserParser.ParamsContext ctx) { }
+	@Override public void enterBloc_llaves(YLenguajeParser.Bloc_llavesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitParams(YLenguajeParserParser.ParamsContext ctx) { }
+	@Override public void exitBloc_llaves(YLenguajeParser.Bloc_llavesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBloc_llaves(YLenguajeParserParser.Bloc_llavesContext ctx) { }
+	@Override public void enterVal_arreglo(YLenguajeParser.Val_arregloContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBloc_llaves(YLenguajeParserParser.Bloc_llavesContext ctx) { }
+	@Override public void exitVal_arreglo(YLenguajeParser.Val_arregloContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterVal_arreglo(YLenguajeParserParser.Val_arregloContext ctx) { }
+	@Override public void enterInstrucciones(YLenguajeParser.InstruccionesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitVal_arreglo(YLenguajeParserParser.Val_arregloContext ctx) { }
+	@Override public void exitInstrucciones(YLenguajeParser.InstruccionesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterInstrucciones(YLenguajeParserParser.InstruccionesContext ctx) { }
+	@Override public void enterBloc_si(YLenguajeParser.Bloc_siContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitInstrucciones(YLenguajeParserParser.InstruccionesContext ctx) { }
+	@Override public void exitBloc_si(YLenguajeParser.Bloc_siContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBloc_si(YLenguajeParserParser.Bloc_siContext ctx) { }
+	@Override public void enterBloque(YLenguajeParser.BloqueContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBloc_si(YLenguajeParserParser.Bloc_siContext ctx) { }
+	@Override public void exitBloque(YLenguajeParser.BloqueContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBloque(YLenguajeParserParser.BloqueContext ctx) { }
+	@Override public void enterDefiniciones(YLenguajeParser.DefinicionesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBloque(YLenguajeParserParser.BloqueContext ctx) { }
+	@Override public void exitDefiniciones(YLenguajeParser.DefinicionesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterDefiniciones(YLenguajeParserParser.DefinicionesContext ctx) { }
+	@Override public void enterAsignaciones(YLenguajeParser.AsignacionesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitDefiniciones(YLenguajeParserParser.DefinicionesContext ctx) { }
+	@Override public void exitAsignaciones(YLenguajeParser.AsignacionesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterAsignaciones(YLenguajeParserParser.AsignacionesContext ctx) { }
+	@Override public void enterExpresion(YLenguajeParser.ExpresionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitAsignaciones(YLenguajeParserParser.AsignacionesContext ctx) { }
+	@Override public void exitExpresion(YLenguajeParser.ExpresionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterExpresion(YLenguajeParserParser.ExpresionContext ctx) { }
+	@Override public void enterTipos(YLenguajeParser.TiposContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitExpresion(YLenguajeParserParser.ExpresionContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterTipos(YLenguajeParserParser.TiposContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitTipos(YLenguajeParserParser.TiposContext ctx) { }
+	@Override public void exitTipos(YLenguajeParser.TiposContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

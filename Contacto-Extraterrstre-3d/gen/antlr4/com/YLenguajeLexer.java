@@ -1,5 +1,5 @@
-// Generated from src/main/java/antlr4/com/YLenguajeLexer.g4 by ANTLR 4.13.2
-package antlr4.com.antlr4.com;
+// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/YLenguajeLexer.g4 by ANTLR 4.13.2
+package antlr4.com;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Token;

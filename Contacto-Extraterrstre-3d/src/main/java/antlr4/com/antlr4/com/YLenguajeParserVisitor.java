@@ -1,109 +1,103 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
  * This interface defines a complete generic visitor for a parse tree produced
- * by {@link YLenguajeParserParser}.
+ * by {@link YLenguajeParser}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
  * operations with no return type.
  */
 public interface YLenguajeParserVisitor<T> extends ParseTreeVisitor<T> {
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#inicio}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#inicio}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitInicio(YLenguajeParserParser.InicioContext ctx);
+	T visitInicio(YLenguajeParser.InicioContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#instruccion}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#bloq_estruc}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitInstruccion(YLenguajeParserParser.InstruccionContext ctx);
+	T visitBloq_estruc(YLenguajeParser.Bloq_estrucContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#bloq_estruc}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#esctruc}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBloq_estruc(YLenguajeParserParser.Bloq_estrucContext ctx);
+	T visitEsctruc(YLenguajeParser.EsctrucContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#esctruc}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#bloq_func}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitEsctruc(YLenguajeParserParser.EsctrucContext ctx);
+	T visitBloq_func(YLenguajeParser.Bloq_funcContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#bloq_func}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#bloc_func}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBloq_func(YLenguajeParserParser.Bloq_funcContext ctx);
+	T visitBloc_func(YLenguajeParser.Bloc_funcContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#bloc_func}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#params}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBloc_func(YLenguajeParserParser.Bloc_funcContext ctx);
+	T visitParams(YLenguajeParser.ParamsContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#params}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#bloc_llaves}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitParams(YLenguajeParserParser.ParamsContext ctx);
+	T visitBloc_llaves(YLenguajeParser.Bloc_llavesContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#bloc_llaves}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#val_arreglo}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBloc_llaves(YLenguajeParserParser.Bloc_llavesContext ctx);
+	T visitVal_arreglo(YLenguajeParser.Val_arregloContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#val_arreglo}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#instrucciones}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitVal_arreglo(YLenguajeParserParser.Val_arregloContext ctx);
+	T visitInstrucciones(YLenguajeParser.InstruccionesContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#instrucciones}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#bloc_si}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitInstrucciones(YLenguajeParserParser.InstruccionesContext ctx);
+	T visitBloc_si(YLenguajeParser.Bloc_siContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#bloc_si}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#bloque}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBloc_si(YLenguajeParserParser.Bloc_siContext ctx);
+	T visitBloque(YLenguajeParser.BloqueContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#bloque}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#definiciones}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBloque(YLenguajeParserParser.BloqueContext ctx);
+	T visitDefiniciones(YLenguajeParser.DefinicionesContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#definiciones}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#asignaciones}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitDefiniciones(YLenguajeParserParser.DefinicionesContext ctx);
+	T visitAsignaciones(YLenguajeParser.AsignacionesContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#asignaciones}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#expresion}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAsignaciones(YLenguajeParserParser.AsignacionesContext ctx);
+	T visitExpresion(YLenguajeParser.ExpresionContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#expresion}.
+	 * Visit a parse tree produced by {@link YLenguajeParser#tipos}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitExpresion(YLenguajeParserParser.ExpresionContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link YLenguajeParserParser#tipos}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTipos(YLenguajeParserParser.TiposContext ctx);
+	T visitTipos(YLenguajeParser.TiposContext ctx);
 }

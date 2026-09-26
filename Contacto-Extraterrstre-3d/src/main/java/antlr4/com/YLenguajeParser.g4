@@ -1,30 +1,28 @@
-grammar YLenguajeParser;
+parser grammar YLenguajeParser;
 
-import YLenguajeLexer;
+options { tokenVocab=YLenguajeLexer; }
 
-tokens { INDENT, DEDENT }
-
-inicio: instruccion EOF
+inicio: NEWLINE* bloq_estruc? bloq_func? NEWLINE* EOF
       ;
-
-instruccion: bloq_estruc? bloq_func?
-           ;
-
+           // %estructuas ...
 bloq_estruc: ESTRUCTURAS NEWLINE INDENT esctruc+ DEDENT
            ;
 
+        // estructua <id> : ...
 esctruc: ESTRUCTURA ID DOS_PUNTOS NEWLINE INDENT definiciones+ DEDENT
        ;
 
-bloq_func: FUNCIONES NEWLINE bloc_func*
+        // %funciones ...
+bloq_func: FUNCIONES NEWLINE INDENT bloc_func+ DEDENT
          ;
 
         // definir <id> (...) -> <tipo> : ....
 bloc_func: DEFINIR ID LPAREN params? RPAREN RETORNO_FUNC (tipos | ID) DOS_PUNTOS NEWLINE bloque
         // definir <id> (...) :
-         | DEFINIR ID LPAREN params? RPAREN DOS_PUNTOS NEWLINE bloque?
+         | DEFINIR ID LPAREN params? RPAREN DOS_PUNTOS NEWLINE bloque
          ;
 
+    // <tipos> <id> , ... , <tipos> <id> || <tipos> <id> [] , ... , <tipos> <id> []
 params: (tipos | ID) ID (LCORCH expresion RCORCH)* (COMA (tipos | ID) ID (LCORCH expresion RCORCH)*)*
       ;
            // {...}, {...} .... , {...}
@@ -41,7 +39,7 @@ instrucciones: definiciones
              // imprimir ()
              | IMPRIMIR LPAREN expresion? RPAREN NEWLINE
              // si(<exp bool>) entonces ...
-             | SI LPAREN expresion RPAREN ENTONCES NEWLINE bloque? bloc_si
+             | SI LPAREN expresion RPAREN ENTONCES NEWLINE bloque bloc_si
              // mientras(<exp bool>) hacer ...
              | MIENTRAS LPAREN expresion RPAREN HACER NEWLINE bloque
              // hacer: ... mientras(<exp bool>)
@@ -50,12 +48,11 @@ instrucciones: definiciones
              | PARA LPAREN tipos ID ASIG expresion DOS_PUNTOS expresion DOS_PUNTOS ID (INCREMENTO | DECREMENTO) RPAREN DOS_PUNTOS NEWLINE bloque
              // retornar <valor>
              | RETORNAR expresion? NEWLINE
-      //       | expresion NEWLINE
              ;
 
+        // sino (<exp bool>) entonces ...                       contrario ...
 bloc_si: (SINO LPAREN expresion RPAREN ENTONCES NEWLINE bloque)* (CONTRARIO NEWLINE bloque)?
        ;
-
 
 bloque: INDENT instrucciones+ DEDENT
       ;
@@ -78,9 +75,9 @@ asignaciones: ID PUNTO ID ASIG expresion NEWLINE
             | ID (LCORCH expresion RCORCH)+ ASIG expresion NEWLINE
            //<id> = <valor>
             | ID ASIG expresion NEWLINE
-            // <id> ++
+           // <id> ++
             | ID INCREMENTO NEWLINE
-            // <id> --
+           // <id> --
             | ID DECREMENTO NEWLINE
             ;
 
@@ -123,5 +120,3 @@ tipos: CADENA
      | CARACTER
      | BOOL
      ;
-
-
