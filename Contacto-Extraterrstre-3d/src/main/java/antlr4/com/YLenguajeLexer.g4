@@ -73,3 +73,5 @@ BLOCK_COMMENT: '/*' .*? '*/' -> skip;
 
 NEWLINE: '\r'?'\n' | '\r';
 TAB: [\t]+;
+
+WS: ' '+ -> skip;
