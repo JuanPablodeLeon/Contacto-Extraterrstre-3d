@@ -117,8 +117,14 @@ public class MainFrame extends JFrame {
                 "Contacto Extraterrestre 3D\nVersión 1.0.0\nOLC2",
                 "Acerca de",
                 JOptionPane.INFORMATION_MESSAGE));
+
+        menuBar.onCopyCodeC(e -> copyC());
     }
 
+    private void copyC(){
+
+        codigoCTextArea.copy();
+    }
     private void wireExplorer() {
         explorer.setOnOpenFile(this::openFileInTab);
         explorer.setOnNewFile(this::promptNewFile);

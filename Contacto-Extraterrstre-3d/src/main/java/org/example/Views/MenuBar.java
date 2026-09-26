@@ -17,6 +17,7 @@ public class MenuBar extends JMenuBar {
     private final JMenuItem errorsItem;
     private final JMenuItem aboutItem;
     private final JMenuItem astTreeItem;
+    private final JButton copyCodeC;
 
     public MenuBar(){
         JMenu fileMenu = new JMenu("Archivo");
@@ -45,10 +46,13 @@ public class MenuBar extends JMenuBar {
         aboutItem = new JMenuItem("Acerca de");
         helpMenu.add(aboutItem);
 
+        copyCodeC = createButton("Copiar Codigo C");
+
         add(fileMenu);
         add(runButton);
         add(reportMenu);
         add(cleanButton);
+        add(copyCodeC);
         add(helpMenu);
     }
 
@@ -62,6 +66,7 @@ public class MenuBar extends JMenuBar {
     public void onErrors(ActionListener l) { errorsItem.addActionListener(l); }
     public void onAbout(ActionListener l)  { aboutItem.addActionListener(l); }
     public void onASTTree(ActionListener l) { astTreeItem.addActionListener(l); }
+    public void onCopyCodeC(ActionListener l ) {copyCodeC.addActionListener(l);}
 
     public JButton getRunButton() { return runButton; }
 
