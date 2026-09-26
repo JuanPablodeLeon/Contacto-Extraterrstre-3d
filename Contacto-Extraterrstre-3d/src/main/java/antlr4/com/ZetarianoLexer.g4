@@ -63,7 +63,7 @@ ASIGNACION: '=';
 
 ID: [a-zA-Z_][a-zA-Z_0-9]*;
 INTEGER: [0-9]+;
-DOUBLES: INT '.' INT;
+DOUBLES: INTEGER '.' INTEGER;
 STRINGS: '"' (ESC|.)*? '"';
 CHARS: '\'' [a-z-A-Z] '\'';
 ESC: '\\"' | '\\\\' ;

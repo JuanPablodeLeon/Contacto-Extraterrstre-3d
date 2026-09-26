@@ -29,6 +29,7 @@ LEER: 'leer';
 VERDADERO: 'verdadero';
 FALSO: 'falso';
 RETORNAR: 'retornar';
+SIEMPRE: 'siempre';
 
 //SIGNOS RESERVADOS
 RETORNO_FUNC: '->';

@@ -1,4 +1,4 @@
-// Generated from src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
+// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -47,6 +47,12 @@ public interface YLenguajeParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitParams(YLenguajeParser.ParamsContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link YLenguajeParser#tipos_params}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTipos_params(YLenguajeParser.Tipos_paramsContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link YLenguajeParser#bloc_llaves}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -76,6 +82,12 @@ public interface YLenguajeParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitBloque(YLenguajeParser.BloqueContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link YLenguajeParser#bloque_elegir}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBloque_elegir(YLenguajeParser.Bloque_elegirContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link YLenguajeParser#definiciones}.
 	 * @param ctx the parse tree

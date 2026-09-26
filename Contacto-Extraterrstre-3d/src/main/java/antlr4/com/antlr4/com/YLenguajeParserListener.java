@@ -1,4 +1,4 @@
-// Generated from src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
+// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -68,6 +68,16 @@ public interface YLenguajeParserListener extends ParseTreeListener {
 	 */
 	void exitParams(YLenguajeParser.ParamsContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link YLenguajeParser#tipos_params}.
+	 * @param ctx the parse tree
+	 */
+	void enterTipos_params(YLenguajeParser.Tipos_paramsContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link YLenguajeParser#tipos_params}.
+	 * @param ctx the parse tree
+	 */
+	void exitTipos_params(YLenguajeParser.Tipos_paramsContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link YLenguajeParser#bloc_llaves}.
 	 * @param ctx the parse tree
 	 */
@@ -117,6 +127,16 @@ public interface YLenguajeParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitBloque(YLenguajeParser.BloqueContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link YLenguajeParser#bloque_elegir}.
+	 * @param ctx the parse tree
+	 */
+	void enterBloque_elegir(YLenguajeParser.Bloque_elegirContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link YLenguajeParser#bloque_elegir}.
+	 * @param ctx the parse tree
+	 */
+	void exitBloque_elegir(YLenguajeParser.Bloque_elegirContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link YLenguajeParser#definiciones}.
 	 * @param ctx the parse tree

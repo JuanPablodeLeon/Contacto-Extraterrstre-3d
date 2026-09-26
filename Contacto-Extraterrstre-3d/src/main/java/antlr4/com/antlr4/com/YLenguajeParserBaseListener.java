@@ -1,4 +1,4 @@
-// Generated from src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
+// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -89,6 +89,18 @@ public class YLenguajeParserBaseListener implements YLenguajeParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterTipos_params(YLenguajeParser.Tipos_paramsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTipos_params(YLenguajeParser.Tipos_paramsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterBloc_llaves(YLenguajeParser.Bloc_llavesContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -144,6 +156,18 @@ public class YLenguajeParserBaseListener implements YLenguajeParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitBloque(YLenguajeParser.BloqueContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBloque_elegir(YLenguajeParser.Bloque_elegirContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBloque_elegir(YLenguajeParser.Bloque_elegirContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -2,7 +2,7 @@ parser grammar YLenguajeParser;
 
 options { tokenVocab=YLenguajeLexer; }
 
-inicio: NEWLINE* bloq_estruc? bloq_func? NEWLINE* EOF
+inicio: NEWLINE* bloq_estruc? bloq_func NEWLINE* EOF
       ;
            // %estructuas ...
 bloq_estruc: ESTRUCTURAS NEWLINE INDENT esctruc+ DEDENT
@@ -22,9 +22,17 @@ bloc_func: DEFINIR ID LPAREN params? RPAREN RETORNO_FUNC (tipos | ID) DOS_PUNTOS
          | DEFINIR ID LPAREN params? RPAREN DOS_PUNTOS NEWLINE bloque
          ;
 
-    // <tipos> <id> , ... , <tipos> <id> || <tipos> <id> [] , ... , <tipos> <id> []
-params: (tipos | ID) ID (LCORCH expresion RCORCH)* (COMA (tipos | ID) ID (LCORCH expresion RCORCH)*)*
+params: tipos_params (COMA tipos_params)*
       ;
+
+             // <tipo> <id>
+tipos_params: (tipos | ID) ID
+            // [] <tipo> <id>
+            | LCORCH RCORCH (tipos | ID) ID
+            // {} <tipo> <id>
+            | LLLAVE RLLAVE (tipos | ID) ID
+            ;
+
            // {...}, {...} .... , {...}
 bloc_llaves: LLLAVE val_arreglo RLLAVE (COMA LLLAVE val_arreglo RLLAVE)*
            ;
@@ -45,9 +53,13 @@ instrucciones: definiciones
              // hacer: ... mientras(<exp bool>)
              | HACER DOS_PUNTOS NEWLINE bloque MIENTRAS LPAREN expresion RPAREN NEWLINE
              // para (<tipo> <id> = <valor> ; <exp bool> ; <id> ++ --) : ...
-             | PARA LPAREN tipos ID ASIG expresion DOS_PUNTOS expresion DOS_PUNTOS ID (INCREMENTO | DECREMENTO) RPAREN DOS_PUNTOS NEWLINE bloque
+             | PARA LPAREN tipos ID ASIG expresion PUNTO_COMA expresion PUNTO_COMA ID (INCREMENTO | DECREMENTO) RPAREN DOS_PUNTOS NEWLINE bloque
+            // elegir (<exp bool>) : ...
+             | ELEGITR LPAREN expresion RPAREN DOS_PUNTOS NEWLINE INDENT bloque_elegir DEDENT
              // retornar <valor>
              | RETORNAR expresion? NEWLINE
+             | ROMPER NEWLINE
+             | CONTINUAR NEWLINE
              ;
 
         // sino (<exp bool>) entonces ...                       contrario ...
@@ -57,6 +69,9 @@ bloc_si: (SINO LPAREN expresion RPAREN ENTONCES NEWLINE bloque)* (CONTRARIO NEWL
 bloque: INDENT instrucciones+ DEDENT
       ;
 
+bloque_elegir: (CASO expresion DOS_PUNTOS NEWLINE bloque)+ SIEMPRE DOS_PUNTOS NEWLINE bloque
+             ;
+
             // <tipo> <id> = <expresion>
 definiciones: (tipos | ID) ID ASIG expresion NEWLINE
            // <tipo> <id> [<valor>] = {...}
@@ -65,6 +80,8 @@ definiciones: (tipos | ID) ID ASIG expresion NEWLINE
             | (tipos | ID) ID ASIG LLLAVE val_arreglo RLLAVE NEWLINE
            // <tipo> <id>
             | (tipos | ID) ID NEWLINE
+           // <tipo> <id> [<valor>]
+            | (tipos | ID) ID (LCORCH expresion RCORCH)+ NEWLINE
             ;
 
            // <id>.<id> = <valor>
