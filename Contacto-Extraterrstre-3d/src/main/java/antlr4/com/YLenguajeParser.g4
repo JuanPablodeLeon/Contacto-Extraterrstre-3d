@@ -19,10 +19,14 @@ esctruc: ESTRUCTURA ID DOS_PUNTOS NEWLINE INDENT definiciones+ DEDENT
 bloq_func: FUNCIONES NEWLINE bloc_func*
          ;
 
-bloc_func: DEFINIR ID LPAREN RPAREN RETORNO_FUNC (tipos | ID) DOS_PUNTOS NEWLINE bloque
-         | DEFINIR ID LPAREN RPAREN DOS_PUNTOS NEWLINE bloque?
+        // definir <id> (...) -> <tipo> : ....
+bloc_func: DEFINIR ID LPAREN params? RPAREN RETORNO_FUNC (tipos | ID) DOS_PUNTOS NEWLINE bloque
+        // definir <id> (...) :
+         | DEFINIR ID LPAREN params? RPAREN DOS_PUNTOS NEWLINE bloque?
          ;
 
+params: (tipos | ID) ID (LCORCH expresion RCORCH)* (COMA (tipos | ID) ID (LCORCH expresion RCORCH)*)*
+      ;
            // {...}, {...} .... , {...}
 bloc_llaves: LLLAVE val_arreglo RLLAVE (COMA LLLAVE val_arreglo RLLAVE)*
            ;
@@ -37,17 +41,19 @@ instrucciones: definiciones
              // imprimir ()
              | IMPRIMIR LPAREN expresion? RPAREN NEWLINE
              // si(<exp bool>) entonces ...
-             | SI LPAREN expresion RPAREN ENTONCES NEWLINE bloque? bloc_si?
+             | SI LPAREN expresion RPAREN ENTONCES NEWLINE bloque? bloc_si
              // mientras(<exp bool>) hacer ...
              | MIENTRAS LPAREN expresion RPAREN HACER NEWLINE bloque
              // hacer: ... mientras(<exp bool>)
-             | HACER DOS_PUNTOS NEWLINE bloque MIENTRAS LPAREN expresion RPAREN
-             | PARA LPAREN tipos ID ASIG expresion DOS_PUNTOS expresion DOS_PUNTOS ID (INCREMENTO | DECREMENTO) DOS_PUNTOS NEWLINE bloque
-             | RETORNAR expresion NEWLINE
-             | expresion NEWLINE
+             | HACER DOS_PUNTOS NEWLINE bloque MIENTRAS LPAREN expresion RPAREN NEWLINE
+             // para (<tipo> <id> = <valor> ; <exp bool> ; <id> ++ --) : ...
+             | PARA LPAREN tipos ID ASIG expresion DOS_PUNTOS expresion DOS_PUNTOS ID (INCREMENTO | DECREMENTO) RPAREN DOS_PUNTOS NEWLINE bloque
+             // retornar <valor>
+             | RETORNAR expresion? NEWLINE
+      //       | expresion NEWLINE
              ;
 
-bloc_si: (SINO LPAREN expresion RPAREN ENTONCES NEWLINE bloque)* CONTRARIO NEWLINE bloque
+bloc_si: (SINO LPAREN expresion RPAREN ENTONCES NEWLINE bloque)* (CONTRARIO NEWLINE bloque)?
        ;
 
 
@@ -72,8 +78,10 @@ asignaciones: ID PUNTO ID ASIG expresion NEWLINE
             | ID (LCORCH expresion RCORCH)+ ASIG expresion NEWLINE
            //<id> = <valor>
             | ID ASIG expresion NEWLINE
-            | ID INCREMENTO
-            | ID DECREMENTO
+            // <id> ++
+            | ID INCREMENTO NEWLINE
+            // <id> --
+            | ID DECREMENTO NEWLINE
             ;
 
         // - <val>
@@ -98,6 +106,7 @@ expresion: RESTA expresion
          | ID (LCORCH expresion RCORCH)+
         // <id>.<id>
          | ID PUNTO ID
+         // leer()
          | LEER LPAREN RPAREN
          | VERDADERO
          | FALSO
