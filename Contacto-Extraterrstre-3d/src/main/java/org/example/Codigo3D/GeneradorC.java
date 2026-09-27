@@ -251,7 +251,7 @@ public class GeneradorC {
 
         StringBuilder c = new StringBuilder();
         c.append("/* =====================================================\n");
-        c.append(" * Traduccion PigLatin+Y? -> C (via codigo de 3 direcciones)\n");
+        c.append(" * Traduccion PigLatin+Zetariano+Y? -> C (via codigo de 3 direcciones)\n");
         if (nombreFuente != null && !nombreFuente.isBlank()) {
             c.append(" * Fuente: ").append(nombreFuente).append("\n");
         }
@@ -563,7 +563,6 @@ public class GeneradorC {
         return out;
     }
 
-    /** Formato del C3D estilo Codex para la pestaña de cuartetas. */
     public static String fmt3D(List<Cuarteta> cuartetas) {
         StringBuilder sb = new StringBuilder();
         for (Cuarteta c : cuartetas) {
