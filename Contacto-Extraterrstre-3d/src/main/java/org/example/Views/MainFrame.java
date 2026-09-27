@@ -1,10 +1,16 @@
 package org.example.Views;
 
+import org.example.Ejecutor.CompiladorService;
+import org.example.Ejecutor.ResultadoCompilacion;
+import org.example.Views.dialogs.ReportDialogs;
+
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashMap;
@@ -20,6 +26,8 @@ public class MainFrame extends JFrame {
     private final JTabbedPane tabbetPaneDown;
     private final MenuBar menuBar;
     private final ProjectManager projectManager;
+    private final CompiladorService compilador = new CompiladorService();
+    private ResultadoCompilacion lastResultado;
 
     private final Map<Component, File> tabFiles = new HashMap<>();
 
@@ -104,31 +112,33 @@ public class MainFrame extends JFrame {
         menuBar.onTokens(e -> showTokens());
         menuBar.onErrors(e -> errors());
         menuBar.onASTTree(e -> {
-            PigLatinEditor current = getCurrentPglEditor();
-            String codigo = current != null ? current.getText() : "";
+            Component current = editorTabs.getSelectedComponent();
+            String codigo = current != null ? getEditorText(current) : "";
             if (codigo.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Ingrese codigo primero");
                 return;
             }
-            // lastEjecucion.mostrarArbolParse(codigo);
+            mostrarArbolAST();
         });
         menuBar.onAbout(e -> JOptionPane.showMessageDialog(
                 this,
                 "Contacto Extraterrestre 3D\nVersión 1.0.0\nOLC2",
                 "Acerca de",
                 JOptionPane.INFORMATION_MESSAGE));
-
-        menuBar.onCopyCodeC(e -> copyC());
+        menuBar.onSimbolos(e -> mostrarSimbolos());
+        menuBar.onTresDir(e -> mostrarTresDirecciones());
+        menuBar.onCodigoC(e -> mostrarCodigoC());
+        menuBar.onGuardarC(e -> guardarCodigoC());
+        menuBar.onCopyCodeC(e -> copiarCOdigoC());
     }
 
-    private void copyC(){
-
-        codigoCTextArea.copy();
-    }
     private void wireExplorer() {
         explorer.setOnOpenFile(this::openFileInTab);
         explorer.setOnNewFile(this::promptNewFile);
         explorer.setOnRenameFile(this::promptRename);
+        explorer.setOnNewFileIn(this::promptNewFileIn);
+        explorer.setOnNewFolderIn(this::promptNewFolder);
+        explorer.setOnDeleteFile(this::promptDelete);
     }
 
     private void wireTabs() {
@@ -176,12 +186,17 @@ public class MainFrame extends JFrame {
                         + "  o Archivo > Abrir proyecto para cargar uno existente.\n"
                         + "• Se generarán PigLatin.pig, YFile.y y Zetariano.z.\n"
                         + "• Explora tus archivos en el árbol de la izquierda.\n"
+                        + "• Clic derecho: nuevo archivo / nueva subcarpeta / renombrar / eliminar.\n"
                         + "• Puedes cerrar pestañas con la X, clic medio, Ctrl+W o clic derecho.\n"
-                        + "• El botón Ejecutar solo está activo en archivos .pig (PigLatin).",
+                        + "• El botón Ejecutar solo está disponible en archivos .pig\n"
+                        + "  (los .y/.z se resuelven como imports vía proyecto.xml).",
                 "Bienvenido",
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
+    private void copiarCOdigoC(){
+        codigoCTextArea.copy();
+    }
     private void crearProyecto() {
         String nombre = JOptionPane.showInputDialog(
                 this,
@@ -222,7 +237,7 @@ public class MainFrame extends JFrame {
         explorer.refresh();
 
         // Abrir los 3 archivos iniciales en pestañas
-        for (File f : projectManager.listProjectFiles()) {
+        for (File f : projectManager.listProjectFilesRecursive()) {
             openFileInTab(f);
         }
         selectPglTab();
@@ -232,7 +247,7 @@ public class MainFrame extends JFrame {
                 + "' creado en: " + projectManager.getProjectDir().getAbsolutePath() + "\n");
         consoleTextArea.append("Archivos: PigLatin.pig, YFile.y, Zetariano.z\n");
         consoleTextArea.append("Control XML: " + projectManager.getXmlFile().getAbsolutePath() + "\n");
-        setTitle("Codex Latinus IDE - " + projectManager.getProjectName());
+        setTitle("Contacto Extraterrestre 3D - " + projectManager.getProjectName());
         updateRunButtonState();
     }
 
@@ -279,7 +294,7 @@ public class MainFrame extends JFrame {
         tabFiles.clear();
         explorer.refresh();
 
-        for (File f : projectManager.listProjectFiles()) {
+        for (File f : projectManager.listProjectFilesRecursive()) {
             openFileInTab(f);
         }
         selectPglTab();
@@ -287,7 +302,7 @@ public class MainFrame extends JFrame {
         cleanConsole();
         consoleTextArea.append("Proyecto '" + projectManager.getProjectName()
                 + "' cargado desde: " + projectManager.getProjectDir().getAbsolutePath() + "\n");
-        consoleTextArea.append("Archivos: " + projectManager.listProjectFiles().size() + "\n");
+        consoleTextArea.append("Archivos: " + projectManager.listProjectFilesRecursive().size() + "\n");
         consoleTextArea.append("Control XML: " + projectManager.getXmlFile().getAbsolutePath() + "\n");
         setTitle("Contacto Extraterrestre 3D - " + projectManager.getProjectName());
         updateRunButtonState();
@@ -339,24 +354,29 @@ public class MainFrame extends JFrame {
     }
 
     private void promptNewFile(String extension) {
+        promptNewFileIn(projectManager.hasProject() ? projectManager.getProjectDir() : null, extension);
+    }
+
+    private void promptNewFileIn(File directory, String extension) {
         if (!projectManager.hasProject()) {
             JOptionPane.showMessageDialog(this, "Primero crea un proyecto.",
                     "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        if (directory == null) directory = projectManager.getProjectDir();
         String base = JOptionPane.showInputDialog(
                 this,
-                "Nombre para el nuevo archivo (" + extension + "):",
+                "Nombre para el nuevo archivo (" + extension + ") en:\n" + directory.getAbsolutePath(),
                 "Nuevo archivo " + extension,
                 JOptionPane.QUESTION_MESSAGE);
         if (base == null || base.trim().isEmpty()) {
             return;
         }
         try {
-            File created = projectManager.createFile(base.trim(), extension);
+            File created = projectManager.createFile(directory, base.trim(), extension);
             explorer.refresh();
             openFileInTab(created);
-            consoleTextArea.append("Archivo creado: " + created.getName() + "\n");
+            consoleTextArea.append("Archivo creado: " + projectManager.relativePath(created) + "\n");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     "No se pudo crear el archivo:\n" + ex.getMessage(),
@@ -364,7 +384,67 @@ public class MainFrame extends JFrame {
         }
     }
 
-    /** Clic derecho > Renombrar sobre un archivo existente. */
+    private void promptNewFolder(File parentDir) {
+        if (!projectManager.hasProject()) {
+            JOptionPane.showMessageDialog(this, "Primero crea un proyecto.",
+                    "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (parentDir == null) parentDir = projectManager.getProjectDir();
+        String base = JOptionPane.showInputDialog(
+                this,
+                "Nombre de la subcarpeta en:\n" + parentDir.getAbsolutePath(),
+                "Nueva subcarpeta",
+                JOptionPane.QUESTION_MESSAGE);
+        if (base == null || base.trim().isEmpty()) {
+            return;
+        }
+        try {
+            File created = projectManager.createFolder(parentDir, base.trim());
+            explorer.refresh();
+            consoleTextArea.append("Subcarpeta creada: " + projectManager.relativePath(created) + "\n");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo crear la subcarpeta:\n" + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void promptDelete(File target) {
+        if (target == null) return;
+        int opt = JOptionPane.showConfirmDialog(this,
+                "¿Eliminar '" + target.getName() + "'?" + (target.isDirectory() ? "\nSe eliminará todo su contenido." : ""),
+                "Eliminar",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+        if (opt != JOptionPane.YES_OPTION) return;
+        try {
+            Component tab = findTabForFile(target);
+            if (tab != null) {
+                editorTabs.remove(tab);
+                tabFiles.remove(tab);
+            } else if (target.isDirectory()) {
+                // cerrar pestañas dentro de la carpeta eliminada
+                for (Component c : tabFiles.keySet().toArray(new Component[0])) {
+                    File f = tabFiles.get(c);
+                    if (f != null && f.getAbsolutePath().startsWith(target.getAbsolutePath() + File.separator)) {
+                        editorTabs.remove(c);
+                        tabFiles.remove(c);
+                    }
+                }
+            }
+            projectManager.delete(target);
+            explorer.refresh();
+            consoleTextArea.append("Eliminado: " + target.getName() + "\n");
+            updateRunButtonState();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo eliminar:\n" + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /** Clic derecho > Renombrar sobre un archivo o carpeta existente. */
     private void promptRename(File file) {
         if (file == null) {
             return;
@@ -381,23 +461,42 @@ public class MainFrame extends JFrame {
             return;
         }
         try {
-            // Guardar contenido en memoria antes de mover en disco
-            Component tab = findTabForFile(file);
-            if (tab != null) {
-                Files.writeString(file.toPath(), getEditorText(tab), StandardCharsets.UTF_8);
-            }
-            File renamed = projectManager.renameFile(file, nuevo.trim());
-            if (tab != null) {
-                tabFiles.put(tab, renamed);
-                int idx = editorTabs.indexOfComponent(tab);
-                if (idx >= 0) {
-                    editorTabs.setTitleAt(idx, renamed.getName());
-                    editorTabs.setToolTipTextAt(idx, renamed.getAbsolutePath());
-                    updateTabHeaderTitle(idx, renamed.getName());
+            if (file.isFile()) {
+                // Guardar contenido en memoria antes de mover en disco
+                Component tab = findTabForFile(file);
+                if (tab != null) {
+                    Files.writeString(file.toPath(), getEditorText(tab), StandardCharsets.UTF_8);
                 }
+                File renamed = projectManager.renameFile(file, nuevo.trim());
+                if (tab != null) {
+                    tabFiles.put(tab, renamed);
+                    int idx = editorTabs.indexOfComponent(tab);
+                    if (idx >= 0) {
+                        editorTabs.setTitleAt(idx, renamed.getName());
+                        editorTabs.setToolTipTextAt(idx, renamed.getAbsolutePath());
+                        updateTabHeaderTitle(idx, renamed.getName());
+                    }
+                }
+                consoleTextArea.append("Renombrado: " + file.getName() + " -> " + renamed.getName() + "\n");
+            } else {
+                File renamed = projectManager.renameFile(file, nuevo.trim());
+                // re-mapear pestañas dentro de la carpeta
+                String oldBase = file.getAbsolutePath();
+                String newBase = renamed.getAbsolutePath();
+                for (Map.Entry<Component, File> e : tabFiles.entrySet()) {
+                    String p = e.getValue().getAbsolutePath();
+                    if (p.equals(oldBase) || p.startsWith(oldBase + File.separator)) {
+                        File nf = new File(newBase + p.substring(oldBase.length()));
+                        e.setValue(nf);
+                        int idx = editorTabs.indexOfComponent(e.getKey());
+                        if (idx >= 0) {
+                            editorTabs.setToolTipTextAt(idx, nf.getAbsolutePath());
+                        }
+                    }
+                }
+                consoleTextArea.append("Carpeta renombrada: " + file.getName() + " -> " + renamed.getName() + "\n");
             }
             explorer.refresh();
-            consoleTextArea.append("Renombrado: " + file.getName() + " -> " + renamed.getName() + "\n");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     "No se pudo renombrar:\n" + ex.getMessage(),
@@ -574,7 +673,17 @@ public class MainFrame extends JFrame {
 
     private void updateRunButtonState() {
         Component sel = editorTabs.getSelectedComponent();
-        menuBar.setRunEnabled(sel instanceof PigLatinEditor);
+        boolean soloPig = sel instanceof PigLatinEditor;
+        menuBar.setRunEnabled(soloPig);
+        if (soloPig) {
+            menuBar.getRunButton().setToolTipText("Ejecutar .pig (valida imports .y/.z vía proyecto.xml y genera C3D + C)");
+        } else {
+            menuBar.getRunButton().setToolTipText("Solo disponible en archivos .pig");
+        }
+    }
+
+    public Component getCurrentEditor() {
+        return editorTabs.getSelectedComponent();
     }
 
     public PigLatinEditor getCurrentPglEditor() {
@@ -611,45 +720,139 @@ public class MainFrame extends JFrame {
     }
 
     private void run() {
-        PigLatinEditor current = getCurrentPglEditor();
+        Component current = editorTabs.getSelectedComponent();
         if (current == null) {
             JOptionPane.showMessageDialog(this,
-                    "El botón Ejecutar solo está disponible en archivos PigLatin (.pgl).",
+                    "No hay ningún archivo abierto.",
                     "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        saveAllOpenFilesQuiet();
-        /* String contenido = current.getText();
-        if (contenido.trim().isEmpty()) {
-            cleanConsole();
-            consoleTextArea.append("Campo Vacio \n");
+        File file = tabFiles.get(current);
+        if (file == null) {
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo identificar el archivo de la pestaña activa.",
+                    "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        lastEjecucion = new Ejecutor();
+        if (!file.getName().toLowerCase().endsWith(".pig")) {
+            JOptionPane.showMessageDialog(this,
+                    "La ejecución solo está disponible para archivos .pig.\n"
+                            + "Los .y/.z se validan como imports desde el .pig principal.",
+                    "Solo .pig", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        saveAllOpenFilesQuiet();
+        String contenido = getEditorText(current);
+        if (contenido.trim().isEmpty()) {
+            cleanConsole();
+            consoleTextArea.append("Campo vacío: no hay código para ejecutar.\n");
+            tabbetPaneDown.setSelectedIndex(0);
+            return;
+        }
         cleanConsole();
         try {
-            boolean sinErrores = lastEjecucion.ejecuar(contenido);
-            consoleTextArea.append(lastEjecucion.getConsola());
-            if (!sinErrores){
-                consoleTextArea.append("Revisar reporte de errores >\n");
+            lastResultado = compilador.compilar(file, contenido);
+            consoleTextArea.append(lastResultado.getConsola());
+            if (lastResultado.isExitoso()) {
+                codigo3DireccionesTextArea.setText("CODIGO 3 DIRECCIONES (" + lastResultado.getLenguaje() + ")\n\n"
+                        + lastResultado.getCodigo3D());
+                codigoCTextArea.setText(lastResultado.getCodigoC());
+            } else {
+                consoleTextArea.append("Revisa Reportes > Reporte de errores.\n");
+                codigo3DireccionesTextArea.setText("CODIGO 3 DIRECCIONES\n\n(sin traducción: hay errores)");
+                codigoCTextArea.setText("CODIGO C\n\n(sin traducción: hay errores)");
             }
-        } catch (Exception e) {
-            consoleTextArea.append("Error: " + e.getMessage() + "\n");
+        } catch (Exception ex) {
+            consoleTextArea.append("✖ Error inesperado al ejecutar: " + ex.getMessage() + "\n");
         }
+        tabbetPaneDown.setSelectedIndex(0);
         consoleTextArea.setCaretPosition(consoleTextArea.getDocument().getLength());
-        current.getTextArea().requestFocus();*/
-        System.out.println("Ejecucion");
+        current.requestFocus();
     }
 
     private void errors() {
-        System.out.println("error");
+        if (lastResultado == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Primero ejecuta el código.",
+                    "Aviso",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        ReportDialogs.showErrors(this, lastResultado.getErrores());
     }
 
     private void showTokens() {
-        System.out.println("Tokens");
+        if (lastResultado == null || lastResultado.getTokens().isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Primero ejecuta un programa para generar los tokens.",
+                    "Reporte de tokens",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        ReportDialogs.showTokens(this, lastResultado.getTokens(),
+                lastResultado.getLenguaje());
     }
 
     private void mostrarArbolAST() {
-        System.out.println("AST");
+        JOptionPane.showMessageDialog(this,
+                "El árbol AST gráfico estará disponible en el Proyecto 2.\n"
+                        + "De momento usa Reportes > Reporte de tokens para inspeccionar el análisis léxico.",
+                "Árbol AST",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private boolean exigirTraduccion(String titulo) {
+        if (lastResultado == null || !lastResultado.tieneTraduccion()) {
+            JOptionPane.showMessageDialog(this,
+                    "Primero ejecuta un programa SIN errores.\nSolo entonces se generan las cuartetas y el código C.",
+                    titulo,
+                    JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+    private void mostrarSimbolos() {
+        if (!exigirTraduccion("Tabla de símbolos")) return;
+        tabbetPaneDown.setSelectedIndex(1);
+        JOptionPane.showMessageDialog(this,
+                "Cuartetas: " + lastResultado.getCuartetas().size()
+                        + " | Variables detectadas en la traducción.\n"
+                        + "Ver pestaña 'Codigo 3 Direciones' para el detalle.",
+                "Tabla de símbolos",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void mostrarTresDirecciones() {
+        if (!exigirTraduccion("Código 3 direcciones")) return;
+        tabbetPaneDown.setSelectedIndex(1);
+    }
+
+    private void mostrarCodigoC() {
+        if (!exigirTraduccion("Código C")) return;
+        tabbetPaneDown.setSelectedIndex(2);
+    }
+
+    private void guardarCodigoC() {
+        if (!exigirTraduccion("Guardar C")) return;
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(new FileNameExtensionFilter("Código C (.c)", "c"));
+        fc.setSelectedFile(new File("salida.c"));
+        if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File f = fc.getSelectedFile();
+            if (!f.getName().toLowerCase().endsWith(".c")) {
+                f = new File(f.getParentFile(), f.getName() + ".c");
+            }
+            try (FileWriter w = new FileWriter(f)) {
+                w.write(lastResultado.getCodigoC());
+                JOptionPane.showMessageDialog(this,
+                        "Código C guardado en:\n" + f.getAbsolutePath() + "\n\nCompilar con:  gcc " + f.getName() + " -o salida",
+                        "Guardar C",
+                        JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error al guardar: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }
+

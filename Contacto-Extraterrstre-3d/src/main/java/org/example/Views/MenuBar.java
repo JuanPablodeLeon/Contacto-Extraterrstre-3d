@@ -17,6 +17,10 @@ public class MenuBar extends JMenuBar {
     private final JMenuItem errorsItem;
     private final JMenuItem aboutItem;
     private final JMenuItem astTreeItem;
+    private final JMenuItem simbolosItem;
+    private final JMenuItem tresDirItem;
+    private final JMenuItem codigoCItem;
+    private final JMenuItem guardarCItem;
     private final JButton copyCodeC;
 
     public MenuBar(){
@@ -43,6 +47,15 @@ public class MenuBar extends JMenuBar {
         reportMenu.add(errorsItem);
         reportMenu.add(astTreeItem);
 
+        simbolosItem = new JMenuItem("Tabla de símbolos");
+        tresDirItem = new JMenuItem("Código 3 direcciones (cuartetas)");
+        codigoCItem = new JMenuItem("Código C generado");
+        guardarCItem = new JMenuItem("Guardar C (.c)...");
+        reportMenu.add(simbolosItem);
+        reportMenu.add(tresDirItem);
+        reportMenu.add(codigoCItem);
+        reportMenu.add(guardarCItem);
+
         aboutItem = new JMenuItem("Acerca de");
         helpMenu.add(aboutItem);
 
@@ -67,6 +80,10 @@ public class MenuBar extends JMenuBar {
     public void onAbout(ActionListener l)  { aboutItem.addActionListener(l); }
     public void onASTTree(ActionListener l) { astTreeItem.addActionListener(l); }
     public void onCopyCodeC(ActionListener l ) {copyCodeC.addActionListener(l);}
+    public void onSimbolos(ActionListener l) { simbolosItem.addActionListener(l); }
+    public void onTresDir(ActionListener l) { tresDirItem.addActionListener(l); }
+    public void onCodigoC(ActionListener l) { codigoCItem.addActionListener(l); }
+    public void onGuardarC(ActionListener l) { guardarCItem.addActionListener(l); }
 
     public JButton getRunButton() { return runButton; }
 

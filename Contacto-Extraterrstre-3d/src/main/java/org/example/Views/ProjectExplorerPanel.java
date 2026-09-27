@@ -9,7 +9,10 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class ProjectExplorerPanel extends JPanel {
@@ -22,6 +25,9 @@ public class ProjectExplorerPanel extends JPanel {
     private Consumer<File> onOpenFile;
     private Consumer<String> onNewFile;
     private Consumer<File> onRenameFile;
+    private BiConsumer<File, String> onNewFileIn;
+    private Consumer<File> onNewFolderIn;
+    private Consumer<File> onDeleteFile;
 
     public ProjectExplorerPanel(){
         setLayout(new BorderLayout());
@@ -65,7 +71,7 @@ public class ProjectExplorerPanel extends JPanel {
                 } else{
                     tree.setSelectionPath(new TreePath(rootNode.getPath()));
                 }
-                File target = getSelectedFile();
+                File target = getFileAt(e.getX(), e.getY());
                 showPopUp(e.getX(), e.getY(), target);
             }
         });
@@ -82,6 +88,22 @@ public class ProjectExplorerPanel extends JPanel {
         return null;
     }
 
+    public File getSelectedDirectory() {
+        TreePath path = tree.getSelectionPath();
+        if (path != null) {
+            Object last = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
+            if (last instanceof FileNode fn) {
+                if (fn.isDirectory()) return fn.file();
+                File parent = fn.file().getParentFile();
+                if (parent != null) return parent;
+            }
+        }
+        if (projectManager != null && projectManager.hasProject()) {
+            return projectManager.getProjectDir();
+        }
+        return null;
+    }
+
     private record FileNode(String name, File file, boolean isDirectory){
         @Override
         public String toString(){
@@ -91,44 +113,74 @@ public class ProjectExplorerPanel extends JPanel {
 
     private void showPopUp(int x, int y, File target){
         JPopupMenu popup = new JPopupMenu();
+        File destDir = (target != null && target.isDirectory()) ? target : getSelectedDirectory();
 
-        JMenu nuevoMenu = new JMenu("Nuevo archivo");
+        JMenu nuevoMenu = new JMenu("Nuevo archivo aquí");
 
         JMenuItem pigItem = new JMenuItem("Archivo PigLatin (.pig)");
-        JMenuItem yItem = new JMenuItem("Archivo YFile (.y)");
+        JMenuItem yItem = new JMenuItem("Archivo Y? (.y)");
         JMenuItem zItem = new JMenuItem("Archivo Zetariano (.z)");
-        pigItem.addActionListener(e -> {
-            if(onNewFile != null) onNewFile.accept(ProjectManager.EXT_PGL);
-        });
-        yItem.addActionListener(e -> {
-            if(onNewFile != null) onNewFile.accept(ProjectManager.EXT_Y);
-        });
-        zItem.addActionListener(e -> {
-            if(onNewFile != null) onNewFile.accept(ProjectManager.EXT_Z);
-        });
+        pigItem.addActionListener(e -> fireNewFile(destDir, ProjectManager.EXT_PGL));
+        yItem.addActionListener(e -> fireNewFile(destDir, ProjectManager.EXT_Y));
+        zItem.addActionListener(e -> fireNewFile(destDir, ProjectManager.EXT_Z));
 
         nuevoMenu.add(pigItem);
         nuevoMenu.add(yItem);
         nuevoMenu.add(zItem);
         popup.add(nuevoMenu);
 
-        if (target != null && target.isFile()){
+        JMenuItem folderItem = new JMenuItem("Nueva subcarpeta aquí");
+        folderItem.addActionListener(e -> {
+            if (onNewFolderIn != null) onNewFolderIn.accept(destDir);
+            else if (destDir != null) {
+                String n = JOptionPane.showInputDialog(tree, "Nombre de la subcarpeta:",
+                        "Nueva subcarpeta", JOptionPane.QUESTION_MESSAGE);
+                if (n != null && !n.trim().isEmpty()) {
+                    try {
+                        projectManager.createFolder(destDir, n.trim());
+                        refresh();
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(tree, "No se pudo crear:\n" + ex.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
+        popup.add(folderItem);
+
+        if (target != null){
             popup.addSeparator();
 
-            JMenuItem abrirItem = new JMenuItem("Abrir");
-            abrirItem.addActionListener(e ->{
-                if (onOpenFile != null) onOpenFile.accept(target);
-            });
+            if (target.isFile()) {
+                JMenuItem abrirItem = new JMenuItem("Abrir");
+                abrirItem.addActionListener(e ->{
+                    if (onOpenFile != null) onOpenFile.accept(target);
+                });
+                popup.add(abrirItem);
+            }
 
             JMenuItem renameItem = new JMenuItem("Renombrar");
             renameItem.addActionListener(e ->{
-                if (onOpenFile != null) onOpenFile.accept(target);
+                if (onRenameFile != null) onRenameFile.accept(target);
             });
 
-            popup.add(abrirItem);
+            JMenuItem deleteItem = new JMenuItem("Eliminar");
+            deleteItem.addActionListener(e -> {
+                if (onDeleteFile != null) onDeleteFile.accept(target);
+            });
+
             popup.add(renameItem);
+            popup.add(deleteItem);
         }
         popup.show(tree, x, y);
+    }
+
+    private void fireNewFile(File destDir, String ext) {
+        if (onNewFileIn != null && destDir != null) {
+            onNewFileIn.accept(destDir, ext);
+        } else if (onNewFile != null) {
+            onNewFile.accept(ext);
+        }
     }
 
     public void setProjectManager(ProjectManager pm){
@@ -140,20 +192,38 @@ public class ProjectExplorerPanel extends JPanel {
         rootNode.removeAllChildren();
 
         if (projectManager == null || !projectManager.hasProject()){
-            rootNode.setUserObject("Sin proyecto Cartado");
+            rootNode.setUserObject("Sin proyecto");
             treeMododel.reload();
             expandRoot();
             return;
         }
         File dir = projectManager.getProjectDir();
         rootNode.setUserObject(new FileNode(projectManager.getProjectName(), dir, true));
-        List<File> files = projectManager.listProjectFiles();
-        for (File f : files){
-            DefaultMutableTreeNode child = new DefaultMutableTreeNode(new FileNode(f.getName(), f, false));
-            rootNode.add(child);
-        }
+        addDirectoryRecursive(rootNode, dir);
         treeMododel.reload();
         expandRoot();
+    }
+
+    private void addDirectoryRecursive(DefaultMutableTreeNode parent, File dir) {
+        File[] kids = dir.listFiles();
+        if (kids == null) return;
+        Arrays.sort(kids, Comparator.comparing(File::isFile)
+                .thenComparing(File::getName, String.CASE_INSENSITIVE_ORDER));
+        for (File k : kids) {
+            if (k.getName().equals(ProjectManager.XML_NAME)) continue;
+            if (k.isDirectory()) {
+                DefaultMutableTreeNode node =
+                        new DefaultMutableTreeNode(new FileNode(k.getName(), k, true));
+                parent.add(node);
+                addDirectoryRecursive(node, k);
+            } else {
+                String n = k.getName();
+                if (n.endsWith(ProjectManager.EXT_PGL) || n.endsWith(ProjectManager.EXT_Y)
+                        || n.endsWith(ProjectManager.EXT_Z)) {
+                    parent.add(new DefaultMutableTreeNode(new FileNode(n, k, false)));
+                }
+            }
+        }
     }
 
     private void expandRoot(){
@@ -170,6 +240,18 @@ public class ProjectExplorerPanel extends JPanel {
 
     public void setOnRenameFile(Consumer<File> onRenameFile){
         this.onRenameFile = onRenameFile;
+    }
+
+    public void setOnNewFileIn(BiConsumer<File, String> onNewFileIn) {
+        this.onNewFileIn = onNewFileIn;
+    }
+
+    public void setOnNewFolderIn(Consumer<File> onNewFolderIn) {
+        this.onNewFolderIn = onNewFolderIn;
+    }
+
+    public void setOnDeleteFile(Consumer<File> onDeleteFile) {
+        this.onDeleteFile = onDeleteFile;
     }
 
     private File getFileAt(int x, int y){
