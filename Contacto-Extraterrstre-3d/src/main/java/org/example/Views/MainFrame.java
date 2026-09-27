@@ -195,7 +195,22 @@ public class MainFrame extends JFrame {
     }
 
     private void copiarCOdigoC(){
+        if (tabbetPaneDown.getSelectedIndex() != 2){
+           JOptionPane.showMessageDialog(this, "Cambia a la pestaña Codigo C", "Copiar C", JOptionPane.WARNING_MESSAGE);
+         //  tabbetPaneDown.setSelectedIndex(2);
+           return;
+        }
+
+        if (lastResultado == null || !lastResultado.tieneTraduccion()) {
+            JOptionPane.showMessageDialog(this,
+                    "Primero ejecuta un programa sin errores.",
+                    "Copiar C", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        codigoCTextArea.selectAll();
         codigoCTextArea.copy();
+        JOptionPane.showMessageDialog(this, "Codigo C copiado", "Codigo C", JOptionPane.INFORMATION_MESSAGE);
     }
     private void crearProyecto() {
         String nombre = JOptionPane.showInputDialog(
