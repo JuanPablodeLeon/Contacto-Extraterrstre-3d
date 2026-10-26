@@ -6,6 +6,8 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.example.Ejecutor.ClaseZ;
 import org.example.Ejecutor.FuncInfo;
+import org.example.Semantico.StructSimbolo;
+import org.example.Semantico.Tipo;
 
 import java.util.*;
 
@@ -61,12 +63,14 @@ public class TraductorPigY {
     private final List<GlobalDecl> globalesDecl;
     private final List<FuncionY> funcionesY;
     private final PigLatinParserParser.InicioContext pigTree;
+    private final Map<String, StructSimbolo> structsY;
 
     private final List<Cuarteta> cuartetas = new ArrayList<>();
     private final Map<String, String> tipoTemp = new LinkedHashMap<>();
     private final Map<String, String> tipoVar = new LinkedHashMap<>();
     private final List<String[]> globales = new ArrayList<>();
     private final Map<String, String> retFunc = new LinkedHashMap<>();
+    private final Map<String, FuncInfo> firmasY = new LinkedHashMap<>();
 
     private final Deque<Map<String, String>> pilaAmbitos = new ArrayDeque<>();
     private Set<String> usadosEnFuncion = new HashSet<>();
@@ -88,10 +92,12 @@ public class TraductorPigY {
 
     public TraductorPigY(PigLatinParserParser.InicioContext pigTree,
                          List<GlobalDecl> globalesDecl,
-                         List<FuncionY> funcionesY) {
+                         List<FuncionY> funcionesY,
+                         Map<String, StructSimbolo> structsY) {
         this.pigTree = pigTree;
         this.globalesDecl = globalesDecl;
         this.funcionesY = funcionesY;
+        this.structsY = structsY == null ? new LinkedHashMap<>() : structsY;
     }
 
     public String tmp(String tipo) { return nuevoTemp(tipo); }
@@ -123,6 +129,7 @@ public class TraductorPigY {
         for (FuncionY f : funcionesY) {
             usadosEnFuncion.add(f.firma.nombre);
             retFunc.put(f.firma.nombre, f.firma.retorno);
+            firmasY.put(f.firma.nombre, f.firma);
         }
         for (GlobalDecl g : globalesDecl) {
             String e = declarar(g.nombre, g.tipo);
@@ -150,7 +157,7 @@ public class TraductorPigY {
                 for (String ap : parNovus) {
                     emitir("PARAM", ap, "-", "-");
                 }
-                emitir("CALL", g.novusClase + "_new", String.valueOf(parNovus.size()), e, "HEAP", "");
+                emitir("CALL", g.novusClase + "_new_" + parNovus.size(), String.valueOf(parNovus.size()), e, "HEAP", "");
             } else if (g.init != null) {
                 String v = genPig(g.init);
                 emitir("=", v, "-", e, GeneradorC.segmentoDe(g.tipo), "");
@@ -274,7 +281,7 @@ public class TraductorPigY {
                 List<String> par = argsNovus(sub);
                 for (String ap : par) emitir("PARAM", ap, "-", "-");
                 String t = nuevoTemp(clase);
-                emitir("CALL", clase + "_new", String.valueOf(par.size()), t, "HEAP", "");
+                emitir("CALL", clase + "_new_" + par.size(), String.valueOf(par.size()), t, "HEAP", "");
                 out.add(t);
             }
         }
@@ -307,9 +314,10 @@ public class TraductorPigY {
         usadosEnFuncion.addAll(tipoVar.keySet());
         pushAmbito();
         for (FuncInfo.ParamInfo p : f.firma.params) {
-            String e = declarar(p.nombre, p.tipo);
-            emitir("PARAM_DECL", p.tipo, "-", e,
-                    GeneradorC.segmentoDe(p.tipo),
+            String pTipo = p.ref ? "&" + p.tipo : p.tipo;
+            String e = declarar(p.nombre, pTipo);
+            emitir("PARAM_DECL", pTipo, "-", e,
+                    GeneradorC.segmentoDe(pTipo),
                     e.equals(p.nombre) ? "parametro en STACK" : "parametro, sombra de " + p.nombre);
         }
         YLenguajeParser.BloqueContext b = f.ctx.bloque();
@@ -332,6 +340,15 @@ public class TraductorPigY {
             asigY(s.asignaciones());
             return;
         }
+        if (s.llamada() != null) {
+            llamadaY(s.llamada());
+            return;
+        }
+        if (s.LEER() != null) {
+            String t = nuevoTemp("decimalis");
+            emitir("READ", t, "-", "-");
+            return;
+        }
         String txt = s.getText();
         if (s.IMPRIMIR() != null) {
             List<YLenguajeParser.ExpresionContext> args = s.expresion();
@@ -344,18 +361,18 @@ public class TraductorPigY {
             }
             return;
         }
-        if (txt.startsWith("retornar")) {
+        if (s.RETORNAR() != null) {
             List<YLenguajeParser.ExpresionContext> args = s.expresion();
             if (args.isEmpty()) emitir("RETURN", "-", "-", "-");
             else emitir("RETURN", genY(args.get(0)), "-", "-");
             return;
         }
-        if (txt.equals("romper")) {
+        if (s.ROMPER() != null) {
             emitir("GOTO", pilaBreak.isEmpty() ? "L_FIN" : pilaBreak.peek(),
                     "-", "-", "STACK", "romper -> break");
             return;
         }
-        if (txt.equals("continuar")) {
+        if (s.CONTINUAR() != null) {
             emitir("GOTO", pilaContinue.isEmpty() ? "L_INI" : pilaContinue.peek(),
                     "-", "-", "STACK", "continuar -> continue");
             return;
@@ -371,6 +388,10 @@ public class TraductorPigY {
             YLenguajeParser.Bloc_siContext bs = s.bloc_si();
             if (bs != null) stmBlocSiY(bs, fin);
             emitir("LABEL", fin, "-", "-");
+            return;
+        }
+        if (s.ELEGITR() != null) {
+            elegirY(s);
             return;
         }
         if (s.MIENTRAS() != null && s.HACER() != null && s.DOS_PUNTOS() == null) {
@@ -431,6 +452,100 @@ public class TraductorPigY {
         throw new RuntimeException("Construcción Y? no soportada en C3D: " + s.getText());
     }
 
+    private void elegirY(YLenguajeParser.InstruccionesContext s) {
+        YLenguajeParser.Bloque_elegirContext be = s.bloque_elegir();
+        if (be == null) return;
+
+        String fin = nuevaEtiqueta();
+        String defecto = nuevaEtiqueta();
+        String selector = genY(s.expresion(0));
+        List<YLenguajeParser.ExpresionContext> casos = be.expresion();
+        List<String> etiquetas = new ArrayList<>();
+
+        for (YLenguajeParser.ExpresionContext caso : casos) {
+            String etiqueta = nuevaEtiqueta();
+            etiquetas.add(etiqueta);
+            String condicion = binaria(selector, "==", genY(caso));
+            emitir("IF_TRUE", condicion, "-", etiqueta);
+        }
+        emitir("GOTO", defecto, "-", "-");
+
+        List<YLenguajeParser.BloqueContext> bloques = be.bloque();
+        for (int i = 0; i < etiquetas.size() && i < bloques.size(); i++) {
+            emitir("LABEL", etiquetas.get(i), "-", "-");
+            pilaBreak.push(fin);
+            cuerpoY(bloques.get(i));
+            pilaBreak.pop();
+            emitir("GOTO", fin, "-", "-");
+        }
+
+        emitir("LABEL", defecto, "-", "-");
+        if (be.SIEMPRE() != null && bloques.size() > casos.size()) {
+            pilaBreak.push(fin);
+            cuerpoY(bloques.get(casos.size()));
+            pilaBreak.pop();
+        }
+        emitir("LABEL", fin, "-", "-");
+    }
+
+    private void paramsY(String fn, List<String> args) {
+        FuncInfo fi = firmasY.get(fn);
+        for (int i = 0; i < args.size(); i++) {
+            String a = args.get(i);
+            if (fi != null && i < fi.params.size() && fi.params.get(i).ref
+                    && !tipoLugar(a).startsWith("&")) a = "&" + a;
+            emitir("PARAM", a, "-", "-");
+        }
+    }
+
+    private String sepCampo(String base) {
+        return tipoLugar(base).startsWith("&") ? "->" : ".";
+    }
+
+    private String tipoBase(String lugar) {
+        String t = tipoLugar(lugar);
+        return t.startsWith("&") ? t.substring(1) : t;
+    }
+
+    private String tipoCampoY(String base, String campo) {
+        StructSimbolo s = structsY.get(tipoBase(base));
+        if (s == null) return "numerus";
+        return canonTipoY(s.tipoCampo(campo));
+    }
+
+    private static String canonTipoY(Tipo t) {
+        if (t == null) return "numerus";
+        switch (t.base) {
+            case ENTERO: return "numerus";
+            case FLOTANTE: return "decimalis";
+            case CADENA: return "textum";
+            case CARACTER: return "littera";
+            case BOOL: return "bool";
+            case SERIES: return "series<" + canonTipoY(t.elementos) + ">";
+            case STRUCT: return t.nombreStruct;
+            default: return "numerus";
+        }
+    }
+
+    private void llamadaY(YLenguajeParser.LlamadaContext llamada) {
+        List<TerminalNode> ids = llamada.ID();
+        if (ids.isEmpty()) return;
+        String fn = ids.get(ids.size() - 1).getText();
+        List<String> args = new ArrayList<>();
+        for (YLenguajeParser.ExpresionContext arg : llamada.expresion()) {
+            args.add(genY(arg));
+        }
+        paramsY(fn, args);
+        String retorno = retFunc.getOrDefault(fn, "void");
+        if (retorno.equals("void")) {
+            emitir("CALL", fn, String.valueOf(args.size()), "-");
+        } else {
+            String t = nuevoTemp(retorno);
+            emitir("CALL", fn, String.valueOf(args.size()), t,
+                    GeneradorC.segmentoDe(retorno), "");
+        }
+    }
+
     private void stmBlocSiY(YLenguajeParser.Bloc_siContext bs, String fin) {
         List<YLenguajeParser.ExpresionContext> conds = bs.expresion();
         List<YLenguajeParser.BloqueContext> bloques = new ArrayList<>();
@@ -485,36 +600,94 @@ public class TraductorPigY {
     }
 
     private void asigY(YLenguajeParser.AsignacionesContext a) {
-        String txt = a.getText();
         List<TerminalNode> ids = a.ID();
         List<YLenguajeParser.ExpresionContext> exprs = a.expresion();
-        if ((txt.endsWith("++") || txt.endsWith("--")) && !exprs.isEmpty()) {
-        }
-        if (a.ASIG() == null) {
-            String e = resolver(ids.get(0).getText());
-            if (e == null) e = ids.get(0).getText();
-            emitir(txt.endsWith("--") ? "-" : "+", e, "1", e);
-            return;
-        }
+        int indices = a.LCORCH().size();
+        boolean inc = a.INCREMENTO() != null || a.DECREMENTO() != null;
+        boolean comp = a.ADD_ASSIGN() != null || a.SUB_ASSIGN() != null
+                || a.MUL_ASSIGN() != null || a.DIV_ASSIGN() != null;
+        String op = a.DECREMENTO() != null || a.SUB_ASSIGN() != null ? "-"
+                : a.MUL_ASSIGN() != null ? "*"
+                : a.DIV_ASSIGN() != null ? "/" : "+";
+        String rhs = (a.ASIG() != null || comp) && !exprs.isEmpty()
+                ? genY(exprs.get(exprs.size() - 1)) : null;
+
+        String base = resolver(ids.get(0).getText());
+        if (base == null) base = ids.get(0).getText();
+
         if (a.PUNTO() != null) {
-            String base = resolver(ids.get(0).getText());
-            if (base == null) base = ids.get(0).getText();
-            emitir(".=", base, ids.get(1).getText(), genY(exprs.get(exprs.size() - 1)),
-                    GeneradorC.segmentoDe(tipoLugar(genYCache(exprs.get(exprs.size() - 1)))), "");
+            String campo = ids.get(1).getText();
+            if (indices > 0) {
+                String arreglo = indexarY(base + sepCampo(base) + campo, exprs, indices - 1);
+                String idx = genY(exprs.get(indices - 1));
+                if (a.ASIG() != null) {
+                    emitir("[]=", arreglo, idx, rhs, "HEAP", "");
+                    return;
+                }
+                String t = nuevoTemp("numerus");
+                emitir("=[]", arreglo, idx, t, "HEAP", "");
+                if (inc) {
+                    emitir(op, t, "1", t);
+                } else {
+                    t = binaria(t, op, rhs);
+                }
+                emitir("[]=", arreglo, idx, t, "HEAP", "");
+                return;
+            }
+
+            if (a.ASIG() != null) {
+                emitir(".=", base, campo, rhs,
+                        GeneradorC.segmentoDe(tipoLugar(rhs)), "");
+                return;
+            }
+            String t = nuevoTemp(tipoCampoY(base, campo));
+            emitir("=.", base, campo, t, GeneradorC.segmentoDe(tipoCampoY(base, campo)), "");
+            if (inc) {
+                emitir(op, t, "1", t);
+            } else {
+                t = binaria(t, op, rhs);
+            }
+            emitir(".=", base, campo, t, "STACK", "");
             return;
         }
-        if (!a.LCORCH().isEmpty()) {
-            String base = resolver(ids.get(0).getText());
-            if (base == null) base = ids.get(0).getText();
-            String idx = genY(exprs.get(0));
-            String v = genY(exprs.get(exprs.size() - 1));
-            emitir("[]=", base, idx, v, "HEAP", "");
+
+        if (indices > 0) {
+            String arreglo = indexarY(base, exprs, indices - 1);
+            String idx = genY(exprs.get(indices - 1));
+            if (a.ASIG() != null) {
+                emitir("[]=", arreglo, idx, rhs, "HEAP", "");
+                return;
+            }
+            String t = nuevoTemp("numerus");
+            emitir("=[]", arreglo, idx, t, "HEAP", "");
+            if (inc) {
+                emitir(op, t, "1", t);
+            } else {
+                t = binaria(t, op, rhs);
+            }
+            emitir("[]=", arreglo, idx, t, "HEAP", "");
             return;
         }
-        String e = resolver(ids.get(0).getText());
-        if (e == null) e = ids.get(0).getText();
-        emitir("=", genY(exprs.get(0)), "-", e,
-                GeneradorC.segmentoDe(tipoLugar(e)), "");
+
+        if (a.ASIG() != null) {
+            emitir("=", rhs, "-", base, GeneradorC.segmentoDe(tipoLugar(base)), "");
+        } else if (inc) {
+            emitir(op, base, "1", base);
+        } else {
+            String t = binaria(base, op, rhs);
+            emitir("=", t, "-", base, GeneradorC.segmentoDe(tipoLugar(base)), "");
+        }
+    }
+
+    private String indexarY(String arreglo, List<YLenguajeParser.ExpresionContext> exprs,
+                            int indices) {
+        String actual = arreglo;
+        for (int i = 0; i < indices; i++) {
+            String t = nuevoTemp("series<numerus>");
+            emitir("=[]", actual, genY(exprs.get(i)), t, "HEAP", "");
+            actual = t;
+        }
+        return actual;
     }
 
     private String genYCache(YLenguajeParser.ExpresionContext e) {
@@ -570,17 +743,34 @@ public class TraductorPigY {
                 return genY((YLenguajeParser.ExpresionContext) e.getChild(1));
             }
             if (a.equals("leer") && b.equals("(")) {
-                String t = nuevoTemp("textum");
-                emitir("CALL", "leer", "0", t, "HEAP", "");
+                String t = nuevoTemp("decimalis");
+                emitir("READ", t, "-", "-");
                 return t;
             }
-            // binaria: expr op expr
-            String l = genY((YLenguajeParser.ExpresionContext) e.getChild(0));
-            String op = e.getChild(1).getText();
-            String r = genY((YLenguajeParser.ExpresionContext) e.getChild(2));
-            return binaria(l, op, r);
+            if (e.getChild(0) instanceof YLenguajeParser.ExpresionContext
+                    && e.getChild(2) instanceof YLenguajeParser.ExpresionContext) {
+                // binaria: expr op expr
+                String l = genY((YLenguajeParser.ExpresionContext) e.getChild(0));
+                String op = e.getChild(1).getText();
+                String r = genY((YLenguajeParser.ExpresionContext) e.getChild(2));
+                return binaria(l, op, r);
+            }
         }
         String txt = e.getText();
+        if (e.PUNTO() != null && !e.LCORCH().isEmpty()) {
+            List<TerminalNode> ids = e.ID();
+            List<YLenguajeParser.ExpresionContext> idxs = e.expresion();
+            if (ids.size() >= 2 && !idxs.isEmpty()) {
+                String base = resolver(ids.get(0).getText());
+                if (base == null) base = ids.get(0).getText();
+                int cantidad = e.LCORCH().size();
+                String arreglo = indexarY(base + sepCampo(base) + ids.get(1).getText(), idxs, cantidad - 1);
+                String idx = genY(idxs.get(cantidad - 1));
+                String t = nuevoTemp("numerus");
+                emitir("=[]", arreglo, idx, t, "HEAP", "");
+                return t;
+            }
+        }
         if (txt.contains("(")) {
             int p = txt.indexOf('(');
             String fn = txt.substring(0, p);
@@ -592,7 +782,7 @@ public class TraductorPigY {
                     argPlaces.add(genY(sub));
                 }
             }
-            for (String ap : argPlaces) emitir("PARAM", ap, "-", "-");
+            paramsY(fn, argPlaces);
             String ret = retFunc.getOrDefault(fn, "numerus");
             if (ret.equals("void")) {
                 emitir("CALL", fn, String.valueOf(argPlaces.size()), "-");
@@ -624,8 +814,8 @@ public class TraductorPigY {
             String campo = txt.substring(p + 1);
             String base = resolver(baseTxt);
             if (base == null) base = baseTxt;
-            String t = nuevoTemp("numerus");
-            emitir("=.", base, campo, t, "STACK", "");
+            String t = nuevoTemp(tipoCampoY(base, campo));
+            emitir("=.", base, campo, t, GeneradorC.segmentoDe(tipoCampoY(base, campo)), "");
             return t;
         }
         return txt;
@@ -865,6 +1055,13 @@ public class TraductorPigY {
                 "STACK", a.getText().contains("--") ? "--" : "++");
     }
 
+    private String tipoElemento(String tipo) {
+        if (tipo != null && tipo.startsWith("series<") && tipo.endsWith(">")) {
+            return tipo.substring(7, tipo.length() - 1);
+        }
+        return "numerus";
+    }
+
     private String genPig(PigLatinParserParser.ExpresionContext e) {
         if (e instanceof PigLatinParserParser.UmenosContext u) {
             String v = genPig(u.expresion());
@@ -905,7 +1102,7 @@ public class TraductorPigY {
                 args.add(genPig(a));
             }
             String fn = c.ID().getText();
-            for (String ap : args) emitir("PARAM", ap, "-", "-");
+            paramsY(fn, args);
             String ret = retFunc.getOrDefault(fn, "numerus");
             if (ret.equals("void")) {
                 emitir("CALL", fn, String.valueOf(args.size()), "-");
@@ -922,27 +1119,26 @@ public class TraductorPigY {
                 args.add(genPig(a));
             }
             String fn = c.ID().getText();
-            for (String ap : args) emitir("PARAM", ap, "-", "-");
+            paramsY(fn, args);
             String ret = retFunc.getOrDefault(fn, c.tipos().getText());
             String t = nuevoTemp(ret);
             emitir("CALL", fn, String.valueOf(args.size()), t,
                     GeneradorC.segmentoDe(ret), "");
             return t;
         }
-        if (e instanceof PigLatinParserParser.Llamada_Elemento_SeriesContext c) {
-            String base = resolver(c.ID().getText());
-            if (base == null) base = c.ID().getText();
-            String idx = genPig(c.expresion());
-            String t = nuevoTemp("numerus");
-            emitir("=[]", base, idx, t, "STACK", "");
+        if (e instanceof PigLatinParserParser.Novus_ExpContext c) {
+            String clase = c.ID().getText();
+            List<String> args = new ArrayList<>();
+            for (PigLatinParserParser.ExpresionContext a : c.expresion()) args.add(genPig(a));
+            for (String ap : args) emitir("PARAM", ap, "-", "-");
+            String t = nuevoTemp(clase);
+            emitir("CALL", clase + "_new_" + args.size(), String.valueOf(args.size()), t, "HEAP", "");
             return t;
         }
-        if (e instanceof PigLatinParserParser.Llamada_Propiedad_StructuraContext c) {
-            List<TerminalNode> ids = c.ID();
-            String base = resolver(ids.get(0).getText());
-            if (base == null) base = ids.get(0).getText();
+        if (e instanceof PigLatinParserParser.Acceso_CadenaContext c) {
+            String base = genPig(c.expresion());
             String tipoB = tipoLugar(base);
-            String campo = ids.get(1).getText();
+            String campo = c.ID().getText();
             ClaseZ cz = clasesZ.get(tipoB);
             String tCampo = (cz != null && cz.campos.containsKey(campo))
                     ? cz.campos.get(campo) : "numerus";
@@ -950,18 +1146,15 @@ public class TraductorPigY {
             emitir("=.", base, campo, t, GeneradorC.segmentoDe(tCampo), "");
             return t;
         }
-        if (e instanceof PigLatinParserParser.LLamada_Propiedad_FuncionContext c) {
-            List<TerminalNode> ids = c.ID();
-            String objName = ids.get(0).getText();
-            String metName = ids.get(1).getText();
-            String base = resolver(objName);
-            if (base == null) base = objName;
+        if (e instanceof PigLatinParserParser.Metodo_CadenaContext c) {
+            String base = genPig(c.expresion(0));
             String tipoB = tipoLugar(base);
             ClaseZ cz = clasesZ.get(tipoB);
+            String metName = c.ID().getText();
             List<String> args = new ArrayList<>();
-            for (PigLatinParserParser.ExpresionContext a : c.expresion()) args.add(genPig(a));
+            for (int i = 1; i < c.expresion().size(); i++) args.add(genPig(c.expresion(i)));
             if (cz != null) {
-                ClaseZ.MetodoZ mm = cz.metodos.get(metName);
+                ClaseZ.MetodoZ mm = cz.metodo(metName, args.size());
                 if (mm == null) {
                     throw new RuntimeException("Método no definido: '" + tipoB + "." + metName + "'.");
                 }
@@ -972,51 +1165,27 @@ public class TraductorPigY {
                 emitir("PARAM", base, "-", "-");
                 for (String ap : args) emitir("PARAM", ap, "-", "-");
                 if (mm.retorno.equals("void")) {
-                    emitir("CALL", tipoB + "_" + metName,
+                    emitir("CALL", mm.nombreC(tipoB),
                             String.valueOf(args.size() + 1), "-");
                     return "0";
                 }
                 String t = nuevoTemp(mm.retorno);
-                emitir("CALL", tipoB + "_" + metName, String.valueOf(args.size() + 1), t,
+                emitir("CALL", mm.nombreC(tipoB), String.valueOf(args.size() + 1), t,
                         GeneradorC.segmentoDe(mm.retorno), "");
                 return t;
             }
             for (String ap : args) emitir("PARAM", ap, "-", "-");
             String t = nuevoTemp("numerus");
-            emitir("CALL", objName + "." + metName,
+            emitir("CALL", tipoB + "." + metName,
                     String.valueOf(args.size()), t, "STACK", "");
             return t;
         }
-        if (e instanceof PigLatinParserParser.Llamada_Series_StructuraContext c) {
-            List<TerminalNode> ids = c.ID();
-            String base = resolver(ids.get(0).getText());
-            if (base == null) base = ids.get(0).getText();
-            String idx = genPig(c.expresion());
-            String t = nuevoTemp("numerus");
-            emitir("=[]", base + "[" + idx + "]", ids.get(1).getText(), t, "STACK", "");
-            return t;
-        }
-        if (e instanceof PigLatinParserParser.Llamada_Series_ValorContext c) {
-            List<TerminalNode> ids = c.ID();
-            String base = resolver(ids.get(0).getText());
-            if (base == null) base = ids.get(0).getText();
-            String idx = genPig(c.expresion());
-            String t = nuevoTemp("numerus");
-            emitir("=[]", base, idx + "." + ids.get(1).getText(), t, "STACK", "");
-            return t;
-        }
-        if (e instanceof PigLatinParserParser.Llmada_Elemnto_FUnc_SerieContext c) {
-            List<TerminalNode> ids = c.ID();
-            List<String> args = new ArrayList<>();
-            for (PigLatinParserParser.ExpresionContext a : c.expresion()) {
-                if (a != c.expresion(0)) args.add(genPig(a));
-            }
-            String idx = genPig(c.expresion(0));
-            for (String ap : args) emitir("PARAM", ap, "-", "-");
-            String t = nuevoTemp("numerus");
-            emitir("CALL", ids.get(0).getText() + "." + ids.get(1).getText()
-                            + "[" + idx + "]." + ids.get(2).getText(),
-                    String.valueOf(args.size()), t, "STACK", "");
+        if (e instanceof PigLatinParserParser.Acceso_IndiceContext c) {
+            String base = genPig(c.expresion(0));
+            String tipoB = tipoLugar(base);
+            String elem = tipoElemento(tipoB);
+            String t = nuevoTemp(elem);
+            emitir("=[]", base, genPig(c.expresion(1)), t, GeneradorC.segmentoDe(elem), "");
             return t;
         }
         if (e instanceof PigLatinParserParser.VerumValorContext) return "verum";

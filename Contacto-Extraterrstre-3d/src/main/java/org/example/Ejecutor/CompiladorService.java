@@ -198,7 +198,7 @@ public class CompiladorService {
         }
 
         TraductorPigY.clases(clases);
-        TraductorPigY trad = new TraductorPigY(tree, globales, funcionesY);
+        TraductorPigY trad = new TraductorPigY(tree, globales, funcionesY, structsY);
         TraductorZ tz = new TraductorZ(trad, clases, arbolesZ);
         trad.traductorZ(tz);
         try {
@@ -211,7 +211,7 @@ public class CompiladorService {
         List<Cuarteta> cuartetas = trad.getCuartetas();
         String codigo3D = GeneradorC.fmt3D(cuartetas);
         GeneradorC genC = new GeneradorC(cuartetas, trad.getTempTypes(),
-                trad.getVarTypes(), trad.getGlobales(), trad.getRetFunc(), clases);
+                trad.getVarTypes(), trad.getGlobales(), trad.getRetFunc(), clases, structsY);
         String codigoC = genC.generar(archivo == null ? "principal.pig" : archivo.getName());
 
         StringBuilder sb = new StringBuilder();
@@ -284,7 +284,7 @@ public class CompiladorService {
     }
 
     private YLenguajeParser.InicioContext parseY(String codigo, ErrorReporter reporter) {
-        return parseY(codigo, reporter, true);
+        return parseY(codigo, reporter, false);
     }
 
     private YLenguajeParser.InicioContext parseY(String codigo, ErrorReporter reporter,
@@ -423,7 +423,10 @@ public class CompiladorService {
                     tipo = "numerus";
                     pname = ids.get(0).getText();
                 }
-                fi.params.add(new FuncInfo.ParamInfo(tipo, pname));
+                if (tp.LCORCH() != null) {
+                    tipo = "series<" + tipo + ">";
+                }
+                fi.params.add(new FuncInfo.ParamInfo(tipo, pname, tp.LLLAVE() != null));
             }
         }
         return fi;
@@ -660,52 +663,6 @@ public class CompiladorService {
                             + "' con " + nArgs + " argumento(s).");
                 }
             }
-        }
-
-        List<PigLatinParserParser.LLamada_Propiedad_FuncionContext> mets = new ArrayList<>();
-        List<PigLatinParserParser.Llamada_Propiedad_StructuraContext> campos = new ArrayList<>();
-        recolectarObjetos(tree, mets, campos);
-        for (var c : mets) {
-            List<TerminalNode> ids = c.ID();
-            String obj = ids.get(0).getText();
-            String met = ids.get(1).getText();
-            String tipo = tipoGlobal.get(obj);
-            if (tipo == null) continue;
-            ClaseZ cz = clases.get(tipo);
-            if (cz == null) {
-                reporter.semantico(1, "'" + obj + "' no es un objeto (es " + tipo
-                        + "): no tiene métodos.");
-                continue;
-            }
-            ClaseZ.MetodoZ mm = cz.metodos.get(met);
-            if (mm == null) {
-                reporter.semantico(1, "Método no definido: '" + tipo + "." + met + "'.");
-            } else if (mm.params.size() != c.expresion().size()) {
-                reporter.semantico(1, "Aridad incorrecta: '" + tipo + "." + met + "' espera "
-                        + mm.params.size() + " pero se dieron " + c.expresion().size() + ".");
-            }
-        }
-        for (var c : campos) {
-            List<TerminalNode> ids = c.ID();
-            String obj = ids.get(0).getText();
-            String campo = ids.get(1).getText();
-            String tipo = tipoGlobal.get(obj);
-            if (tipo == null) continue;
-            ClaseZ cz = clases.get(tipo);
-            if (cz == null) continue;
-            if (!cz.campos.containsKey(campo)) {
-                reporter.semantico(1, "Campo no definido: '" + tipo + "." + campo + "'.");
-            }
-        }
-    }
-
-    private void recolectarObjetos(ParseTree n,
-                                   List<PigLatinParserParser.LLamada_Propiedad_FuncionContext> mets,
-                                   List<PigLatinParserParser.Llamada_Propiedad_StructuraContext> campos) {
-        if (n instanceof PigLatinParserParser.LLamada_Propiedad_FuncionContext c) mets.add(c);
-        else if (n instanceof PigLatinParserParser.Llamada_Propiedad_StructuraContext c) campos.add(c);
-        for (int i = 0; i < n.getChildCount(); i++) {
-            recolectarObjetos(n.getChild(i), mets, campos);
         }
     }
 

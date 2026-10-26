@@ -287,26 +287,31 @@ public class SemanticoZ  extends ZetarianoParserBaseVisitor<Tipo> {
             return Tipo.VOID;
         }
         if (ctx.SWITCH() != null) {
-            String var = ctx.ID(0).getText();
-            VarSymbol vs = tabla.obtenerVar(var);
-            if (vs == null) {
-                errores.semantico(linea(ctx), "La variable no ha sido declarada: '" + var + "'.");
-            } else if (!vs.type.esPrimitivo() && !vs.type.esError()) {
+            Tipo sel = tipoExpresion(ctx.expresion(0));
+            if (!sel.esPrimitivo() && !sel.esError()) {
                 errores.semantico(linea(ctx), "El 'switch' solo admite int, char o String.");
             }
             profundidadSwitch++;
-            for (ZetarianoParserParser.Bloque_switchContext b : ctx.bloque_switch()) {
-                Tipo tc = tipoExpresion(b.expresion());
-                if (vs != null && !vs.type.esError() && !tc.esError()
-                        && !Tipo.asignableZ(vs.type, tc) && !Tipo.asignableZ(tc, vs.type)) {
-                    errores.semantico(linea(b), "El 'case' " + tc + " no es compatible con " + vs.type + ".");
+            ZetarianoParserParser.Switch_cuerpoContext cuerpo = ctx.switch_cuerpo();
+            if (cuerpo != null) {
+                for (ZetarianoParserParser.Bloque_switchContext b : cuerpo.bloque_switch()) {
+                    Tipo tc = tipoExpresion(b.expresion());
+                    if (!sel.esError() && !tc.esError()
+                            && !Tipo.asignableZ(sel, tc) && !Tipo.asignableZ(tc, sel)) {
+                        errores.semantico(linea(b), "El 'case' " + tc + " no es compatible con " + sel + ".");
+                    }
+                    profundidadCiclo++;
+                    for (ZetarianoParserParser.InstruccionContext h : b.instruccion()) visitInstruccion(h);
+                    profundidadCiclo--;
                 }
-                profundidadCiclo++;
-                for (ZetarianoParserParser.InstruccionContext h : b.instruccion()) visitInstruccion(h);
-                profundidadCiclo--;
+                ZetarianoParserParser.Bloque_defaultContext def = cuerpo.bloque_default();
+                if (def != null) {
+                    profundidadCiclo++;
+                    for (ZetarianoParserParser.InstruccionContext h : def.instruccion()) visitInstruccion(h);
+                    profundidadCiclo--;
+                }
             }
             profundidadSwitch--;
-            for (ZetarianoParserParser.InstruccionContext h : ctx.instruccion()) visitInstruccion(h);
             return Tipo.VOID;
         }
         if (ctx.FOR() != null) {
@@ -561,29 +566,6 @@ public class SemanticoZ  extends ZetarianoParserBaseVisitor<Tipo> {
             }
             return vs.type;
         }
-        if (a.LCORCH() != null) {
-            String var = a.ID().getText();
-            VarSymbol vs = tabla.obtenerVar(var);
-            if (vs == null) {
-                errores.semantico(ln, "La variable no ha sido declarada: '" + var + "'.");
-                return Tipo.ERROR;
-            }
-            if (vs.type.base != Tipo.Base.SERIES) {
-                errores.semantico(ln, "No es un arreglo: '" + var + "'.");
-                return Tipo.ERROR;
-            }
-            Tipo tIdx = tipoExpresion(exprs.get(0));
-            if (!tIdx.esError() && tIdx.base != Tipo.Base.ENTERO) {
-                errores.semantico(linea(exprs.get(0)), "El índice del arreglo debe ser int.");
-            }
-            Tipo real = tipoExpresion(exprs.get(1));
-            if (!vs.type.elementos.esError() && !real.esError()
-                    && !Tipo.asignableZ(vs.type.elementos, real)) {
-                errores.semantico(ln, "No se puede asignar " + real + " al arreglo '" + var
-                        + "' de " + vs.type.elementos + ".");
-            }
-            return vs.type.elementos;
-        }
         if (a.INCREMENTO() != null || a.DECREMENTO() != null) {
             VarSymbol vs = tabla.obtenerVar(a.ID().getText());
             if (vs == null) {
@@ -671,7 +653,49 @@ public class SemanticoZ  extends ZetarianoParserBaseVisitor<Tipo> {
         return actual;
     }
 
+    private static boolean hijoTexto(ParseTree n, String txt) {
+        for (int i = 0; i < n.getChildCount(); i++) {
+            ParseTree ch = n.getChild(i);
+            if (ch instanceof TerminalNode tn && tn.getText().equals(txt)) return true;
+        }
+        return false;
+    }
+
     public Tipo tipoExpresion(ZetarianoParserParser.ExpresionContext e) {
+        if (e.getChild(0) instanceof TerminalNode tnN && tnN.getSymbol().getType() == ZetarianoParserParser.NEW
+                && e.getChild(1) instanceof ZetarianoParserParser.TiposContext tip) {
+            Tipo t = Tipo.desdeZ(tip.getText());
+            for (ZetarianoParserParser.ExpresionContext sz : e.expresion()) {
+                Tipo ti = tipoExpresion(sz);
+                if (!ti.esError() && ti.base != Tipo.Base.ENTERO) {
+                    errores.semantico(linea(sz), "El tamaño del arreglo debe ser int.");
+                }
+            }
+            for (int i = 0; i < e.LCORCH().size(); i++) t = Tipo.series(t);
+            return t;
+        }
+        if (e.getChild(0) instanceof TerminalNode tnN && tnN.getSymbol().getType() == ZetarianoParserParser.NEW
+                && e.getChild(1) instanceof TerminalNode tnId
+                && tnId.getSymbol().getType() == ZetarianoParserParser.ID) {
+            String clase = tnId.getText();
+            List<Tipo> args = e.params() == null
+                    ? List.of() : tiposParams(e.params());
+            validarConstructor(clase, args, linea(e));
+            return Tipo.struct(clase);
+        }
+        if (hijoTexto(e, "?")) {
+            List<ZetarianoParserParser.ExpresionContext> es = e.expresion();
+            Tipo cond = tipoExpresion(es.get(0));
+            exigirBool(cond, linea(e), "operador ternario");
+            Tipo a = tipoExpresion(es.get(1));
+            Tipo b = tipoExpresion(es.get(2));
+            if (a.esError()) return b;
+            if (b.esError()) return a;
+            if (Tipo.asignableZ(a, b)) return a;
+            if (Tipo.asignableZ(b, a)) return b;
+            errores.semantico(linea(e), "Las ramas del ternario (" + a + " : " + b + ") no son compatibles.");
+            return Tipo.ERROR;
+        }
         int n = e.getChildCount();
         if (n == 1) {
             ParseTree ch = e.getChild(0);
@@ -724,23 +748,17 @@ public class SemanticoZ  extends ZetarianoParserBaseVisitor<Tipo> {
                 return tipoExpresion((ZetarianoParserParser.ExpresionContext) e.getChild(1));
             }
         }
-        if (e.MULT() != null || e.DIV() != null) {
-            Tipo l = tipoExpresion(e.expresion(0));
-            Tipo r = tipoExpresion(e.expresion(1));
-            String op = e.MULT() != null ? "*" : "/";
-            return aritmetica(l, op, r, linea(e), false);
-        }
-        if (e.MOD() != null) {
-            Tipo l = tipoExpresion(e.expresion(0));
-            Tipo r = tipoExpresion(e.expresion(1));
-            return aritmetica(l, "%", r, linea(e), true);
-        }
-        if (e.SUMA() != null || e.getChildCount() > 1
-                && (e.getChild(1).getText().equals("+") || e.getChild(1).getText().equals("-"))) {
-            if (e.expresion().size() >= 2) {
+        if (n >= 3 && e.getChild(1) instanceof TerminalNode opn
+                && e.expresion().size() >= 2) {
+            String op = opn.getText();
+            if (op.equals("*") || op.equals("/") || op.equals("%")) {
                 Tipo l = tipoExpresion(e.expresion(0));
                 Tipo r = tipoExpresion(e.expresion(1));
-                String op = e.getChild(1).getText();
+                return aritmetica(l, op, r, linea(e), op.equals("%"));
+            }
+            if (op.equals("+") || op.equals("-")) {
+                Tipo l = tipoExpresion(e.expresion(0));
+                Tipo r = tipoExpresion(e.expresion(1));
                 if (op.equals("+") && (l.base == Tipo.Base.CADENA || r.base == Tipo.Base.CADENA)) {
                     if (!l.esPrimitivo() && l.base != Tipo.Base.CADENA
                             || !r.esPrimitivo() && r.base != Tipo.Base.CADENA) {
@@ -754,39 +772,28 @@ public class SemanticoZ  extends ZetarianoParserBaseVisitor<Tipo> {
                 }
                 return aritmetica(l, op, r, linea(e), false);
             }
-        }
-        if (e.IGUAL() != null || e.NO_IGUAL() != null) {
-            Tipo l = tipoExpresion(e.expresion(0));
-            Tipo r = tipoExpresion(e.expresion(1));
-            String op = e.IGUAL() != null ? "==" : "!=";
-            return igualdad(l, op, r, linea(e));
-        }
-        if (e.MENOR_IGUAL() != null || e.MAYOR_IGUAL() != null) {
-            Tipo l = tipoExpresion(e.expresion(0));
-            Tipo r = tipoExpresion(e.expresion(1));
-            String op = e.MENOR_IGUAL() != null ? "<=" : ">=";
-            return relacional(l, op, r, linea(e));
-        }
-        if (e.MENOR() != null || e.MAYOR() != null) {
-            Tipo l = tipoExpresion(e.expresion(0));
-            Tipo r = tipoExpresion(e.expresion(1));
-            String op = e.MENOR() != null ? "<" : ">";
-            return relacional(l, op, r, linea(e));
-        }
-        if (e.AND() != null || e.OR() != null) {
-            Tipo l = tipoExpresion(e.expresion(0));
-            Tipo r = tipoExpresion(e.expresion(1));
-            String op = e.AND() != null ? "&&" : "||";
-            if (!l.equals(Tipo.BOOL) && !l.esError()
-                    || !r.equals(Tipo.BOOL) && !r.esError()) {
-                errores.semantico(linea(e), "El operador '" + op + "' solo opera sobre boolean.");
+            if (op.equals("==") || op.equals("!=")) {
+                return igualdad(tipoExpresion(e.expresion(0)), op,
+                        tipoExpresion(e.expresion(1)), linea(e));
             }
-            return Tipo.BOOL;
+            if (op.equals("<=") || op.equals(">=") || op.equals("<") || op.equals(">")) {
+                return relacional(tipoExpresion(e.expresion(0)), op,
+                        tipoExpresion(e.expresion(1)), linea(e));
+            }
+            if (op.equals("&&") || op.equals("||")) {
+                Tipo l = tipoExpresion(e.expresion(0));
+                Tipo r = tipoExpresion(e.expresion(1));
+                if (!l.equals(Tipo.BOOL) && !l.esError()
+                        || !r.equals(Tipo.BOOL) && !r.esError()) {
+                    errores.semantico(linea(e), "El operador '" + op + "' solo opera sobre boolean.");
+                }
+                return Tipo.BOOL;
+            }
         }
-        if (e.PUNTO() != null) {
+        if (hijoTexto(e, ".")) {
             return tipoAcceso(e);
         }
-        if (e.LCORCH() != null) {
+        if (hijoTexto(e, "[")) {
             Tipo base = tipoExpresion(e.expresion(0));
             Tipo idx = tipoExpresion(e.expresion(1));
             if (!idx.esError() && idx.base != Tipo.Base.ENTERO) {

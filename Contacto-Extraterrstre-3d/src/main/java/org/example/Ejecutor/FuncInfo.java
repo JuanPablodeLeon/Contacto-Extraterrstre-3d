@@ -18,9 +18,14 @@ public class FuncInfo {
     public static class ParamInfo {
         public final String tipo;
         public final String nombre;
+        public final boolean ref;
         public ParamInfo(String tipo, String nombre) {
+            this(tipo, nombre, false);
+        }
+        public ParamInfo(String tipo, String nombre, boolean ref) {
             this.tipo = tipo;
             this.nombre = nombre;
+            this.ref = ref;
         }
     }
 
@@ -35,7 +40,7 @@ public class FuncInfo {
             case "bool": case "booleano": return "bool";
             case "numerus": case "decimalis": case "textum": case "littera": return s;
             case "void": case "vacio": return "void";
-            default: return s;
+            default: return t.trim();
         }
     }
 }

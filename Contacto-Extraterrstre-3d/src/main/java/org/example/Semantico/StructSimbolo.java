@@ -8,6 +8,7 @@ public class StructSimbolo {
     public final String name;
     public final int line;
     public final Map<String, Tipo> campos = new LinkedHashMap<>();
+    public final Map<String, Integer> tamanos = new LinkedHashMap<>();
 
     public StructSimbolo(String nombre, int linea) {
         this.name = nombre;

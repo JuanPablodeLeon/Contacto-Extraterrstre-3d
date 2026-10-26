@@ -15,7 +15,7 @@ public class ClaseZ {
     public final String archivoOrigen;
     public final Map<String, String> campos = new LinkedHashMap<>();
     public final List<MetodoZ> constructores = new ArrayList<>();
-    public final Map<String, MetodoZ> metodos = new LinkedHashMap<>();
+    public final Map<String, List<MetodoZ>> metodos = new LinkedHashMap<>();
 
     public ClaseZ(String nombre, String archivoOrigen) {
         this.nombre = nombre;
@@ -45,8 +45,17 @@ public class ClaseZ {
             this.ctx = ctx;
         }
         public String nombreC(String clase) {
-            return clase + "_" + (constructor ? "new" : nombre);
+            return clase + "_" + (constructor ? "new" : nombre) + "_" + params.size();
         }
+    }
+
+    public MetodoZ metodo(String nombre, int aridad) {
+        List<MetodoZ> lista = metodos.get(nombre);
+        if (lista == null) return null;
+        for (MetodoZ m : lista) {
+            if (m.params.size() == aridad) return m;
+        }
+        return null;
     }
 
     public static String canonZ(String t) {
@@ -103,7 +112,7 @@ public class ClaseZ {
                 else ret = "void";
                 MetodoZ m = new MetodoZ(false, nombreMet, ret, ins);
                 paramsDesde(ins.param_var(), m);
-                cz.metodos.put(nombreMet, m);
+                cz.metodos.computeIfAbsent(nombreMet, k -> new ArrayList<>()).add(m);
             }
         }
         return cz;
@@ -123,6 +132,14 @@ public class ClaseZ {
         } else {
             return;
         }
+        int dims = 0;
+        for (int i = 0; i < d.getChildCount(); i++) {
+            ParseTree ch = d.getChild(i);
+            if (ch instanceof TerminalNode tn
+                    && tn.getSymbol().getType() == ZetarianoParserParser.ID) break;
+            if (ch instanceof TerminalNode tn && tn.getText().equals("[")) dims++;
+        }
+        for (int i = 0; i < dims; i++) tipo = "series<" + tipo + ">";
         cz.campos.putIfAbsent(campo, tipo);
     }
 

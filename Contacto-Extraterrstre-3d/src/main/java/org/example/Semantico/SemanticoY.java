@@ -48,7 +48,16 @@ public class SemanticoY extends YLenguajeParserBaseVisitor<Tipo> {
                     default: t = Tipo.struct(tipoRaw); break;
                 }
                 if (!d.LCORCH().isEmpty()) t = Tipo.series(t);
-                s.campos.putIfAbsent(d.ID(d.ID().size() - 1).getText(), t);
+                String campo = d.ID(d.ID().size() - 1).getText();
+                s.campos.putIfAbsent(campo, t);
+                if (!d.LCORCH().isEmpty() && !d.expresion().isEmpty()) {
+                    String tam = d.expresion(0).getText().trim();
+                    if (tam.matches("[0-9]+")) {
+                        try {
+                            s.tamanos.putIfAbsent(campo, Integer.parseInt(tam));
+                        } catch (NumberFormatException ignored) { }
+                    }
+                }
             }
             out.putIfAbsent(nombre, s);
         }
@@ -518,15 +527,23 @@ public class SemanticoY extends YLenguajeParserBaseVisitor<Tipo> {
         List<YLenguajeParser.ExpresionContext> exprs = a.expresion();
         int ln = linea(a);
         if (a.ASIG() == null) {
-            VarSymbol vs = tabla.obtenerVar(ids.get(0).getText());
-            if (vs == null) {
-                errores.semantico(ln, "La variable no ha sido declarada: '" + ids.get(0).getText() + "'.");
-                return Tipo.ERROR;
+            Tipo destino = tipoDestinoAsignacion(a, ln);
+            if (a.INCREMENTO() != null || a.DECREMENTO() != null) {
+                if (!destino.esNumero() && !destino.esError()) {
+                    errores.semantico(ln, "El operador '++/--' solo aplica a tipos numéricos (entero, flotante).");
+                }
+                return destino;
             }
-            if (!vs.type.esNumero() && !vs.type.esError()) {
-                errores.semantico(ln, "El operador '++/--' solo aplica a tipos numéricos (entero, flotante).");
+            String op = a.ADD_ASSIGN() != null ? "+"
+                    : a.SUB_ASSIGN() != null ? "-"
+                    : a.MUL_ASSIGN() != null ? "*" : "/";
+            Tipo real = exprs.isEmpty() ? Tipo.ERROR
+                    : tipoExpresion(exprs.get(exprs.size() - 1));
+            Tipo resultado = tipoBinaria(destino, op, real, ln);
+            if (!resultado.esError() && !Tipo.asignableY(destino, resultado)) {
+                errores.semantico(ln, "Valores no compatibles: " + resultado + " <-> " + destino + ".");
             }
-            return vs.type;
+            return destino;
         }
         if (a.PUNTO() != null) {
             VarSymbol vs = tabla.obtenerVar(ids.get(0).getText());
@@ -589,6 +606,56 @@ public class SemanticoY extends YLenguajeParserBaseVisitor<Tipo> {
         if (!vs.type.esError() && !real.esError() && !Tipo.asignableY(vs.type, real)) {
             errores.semantico(ln, "Valores no compatibles: " + real + " <-> " + vs.type + ".");
         }
+        return vs.type;
+    }
+
+    private Tipo tipoDestinoAsignacion(YLenguajeParser.AsignacionesContext a, int ln) {
+        List<TerminalNode> ids = a.ID();
+        List<YLenguajeParser.ExpresionContext> exprs = a.expresion();
+        int indices = a.LCORCH().size();
+
+        VarSymbol vs = tabla.obtenerVar(ids.get(0).getText());
+        if (vs == null) {
+            errores.semantico(ln, "La variable no ha sido declarada: '" + ids.get(0).getText() + "'.");
+            return Tipo.ERROR;
+        }
+
+        if (a.PUNTO() != null) {
+            if (vs.type.base != Tipo.Base.STRUCT) {
+                errores.semantico(ln, "No es una variable de tipo estructura: '" + ids.get(0).getText() + "'.");
+                return Tipo.ERROR;
+            }
+            StructSimbolo s = tabla.obtenerStruct(vs.type.nombreStruct);
+            String campo = ids.get(1).getText();
+            if (s == null || !s.tieneCampo(campo)) {
+                errores.semantico(ln, "La estructura '" + vs.type + "' no tiene el atributo '" + campo + "'.");
+                return Tipo.ERROR;
+            }
+            Tipo campoType = s.tipoCampo(campo);
+            if (indices > 0) {
+                if (campoType.base != Tipo.Base.SERIES) {
+                    errores.semantico(ln, "El atributo '" + campo + "' no es un arreglo.");
+                    return Tipo.ERROR;
+                }
+                for (int i = 0; i < indices; i++) {
+                    exigirIndice(exprs.get(i));
+                }
+                return campoType.elementos;
+            }
+            return campoType;
+        }
+
+        if (indices > 0) {
+            if (vs.type.base != Tipo.Base.SERIES) {
+                errores.semantico(ln, "No es de tipo arreglo: '" + ids.get(0).getText() + "'.");
+                return Tipo.ERROR;
+            }
+            for (int i = 0; i < indices; i++) {
+                exigirIndice(exprs.get(i));
+            }
+            return vs.type.elementos;
+        }
+
         return vs.type;
     }
 
@@ -662,7 +729,7 @@ public class SemanticoY extends YLenguajeParserBaseVisitor<Tipo> {
                 return tipoExpresion((YLenguajeParser.ExpresionContext) e.getChild(1));
             }
             if (a.equals("leer")) {
-                return Tipo.CADENA;
+                return Tipo.FLOTANTE;
             }
             Tipo izq = tipoExpresion(hi);
             String op = opNode.getText();
@@ -675,7 +742,7 @@ public class SemanticoY extends YLenguajeParserBaseVisitor<Tipo> {
             return tipoExpresion(par);
         }
         if (n == 3 && e.getChild(0).getText().equals("leer")) {
-            return Tipo.CADENA;
+            return Tipo.FLOTANTE;
         }
         String txt = e.getText();
         if (txt.contains("(")) {

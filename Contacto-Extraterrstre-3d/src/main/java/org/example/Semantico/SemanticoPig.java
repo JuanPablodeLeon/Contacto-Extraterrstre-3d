@@ -275,6 +275,9 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
     }
 
     private Tipo desdeCanon(String canon) {
+        if (canon != null && canon.startsWith("series<") && canon.endsWith(">")) {
+            return Tipo.series(desdeCanon(canon.substring(7, canon.length() - 1)));
+        }
         return switch (canon) {
             case "numerus" -> Tipo.ENTERO;
             case "decimalis" -> Tipo.FLOTANTE;
@@ -649,221 +652,75 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
     }
 
     @Override
-    public Tipo visitLlamada_Elemento_Series(PigLatinParserParser.Llamada_Elemento_SeriesContext ctx) {
-        VarSymbol vs = tabla.obtenerVar(ctx.ID().getText());
-        Tipo tIdx = visit(ctx.expresion());
-        if (!tIdx.esError() && tIdx.base != Tipo.Base.ENTERO) {
-            errores.semantico(linea(ctx), "El índice de la serie debe ser numerus.");
-        }
-        if (vs == null) {
-            errores.semantico(linea(ctx), "La variable no ha sido declarada: '" + ctx.ID().getText() + "'.");
+    public Tipo visitAcceso_Cadena(PigLatinParserParser.Acceso_CadenaContext ctx) {
+        Tipo base = visit(ctx.expresion());
+        if (base.esError()) return Tipo.ERROR;
+        if (base.base != Tipo.Base.STRUCT) {
+            errores.semantico(linea(ctx), "'" + ctx.expresion().getText()
+                    + "' no es una estructura/objeto (es " + base + ").");
             return Tipo.ERROR;
         }
-        if (vs.type.base != Tipo.Base.SERIES) {
-            errores.semantico(linea(ctx), "La variable no es una serie: '" + ctx.ID().getText() + "'.");
-            return Tipo.ERROR;
-        }
-        Integer idx = constanteEntera(ctx.expresion());
-        if (idx != null && vs.sizeSeries != null && (idx < 0 || idx >= vs.sizeSeries)) {
-            errores.semantico(linea(ctx), "Índice fuera de rango: " + idx + ".");
-        }
-        return vs.type.elementos;
-    }
-
-    @Override
-    public Tipo visitLlamada_Propiedad_Structura(PigLatinParserParser.Llamada_Propiedad_StructuraContext ctx) {
-        List<TerminalNode> ids = ctx.ID();
-        VarSymbol vs = tabla.obtenerVar(ids.get(0).getText());
-        if (vs == null) {
-            errores.semantico(linea(ctx), "La variable no ha sido declarada: '" + ids.get(0).getText() + "'.");
-            return Tipo.ERROR;
-        }
-        if (vs.type.base != Tipo.Base.STRUCT) {
-            errores.semantico(linea(ctx), "No es una estructura/objeto: '" + ids.get(0).getText() + "'.");
-            return Tipo.ERROR;
-        }
-        Tipo t = tipoCampoEstructura(vs.type.nombreStruct, ids.get(1).getText(), linea(ctx));
+        Tipo t = tipoCampoEstructura(base.nombreStruct, ctx.ID().getText(), linea(ctx));
         return t == null ? Tipo.ERROR : t;
     }
 
     @Override
-    public Tipo visitLLamada_Propiedad_Funcion(
-            PigLatinParserParser.LLamada_Propiedad_FuncionContext ctx) {
-        List<TerminalNode> ids = ctx.ID();
-        String obj = ids.get(0).getText();
-        String met = ids.get(1).getText();
-        VarSymbol vs = tabla.obtenerVar(obj);
-        List<Tipo> args = new ArrayList<>();
-        for (PigLatinParserParser.ExpresionContext e : ctx.expresion()) args.add(visit(e));
-        if (vs == null) {
-            errores.semantico(linea(ctx), "La variable no ha sido declarada: '" + obj + "'.");
+    public Tipo visitMetodo_Cadena(PigLatinParserParser.Metodo_CadenaContext ctx) {
+        Tipo base = visit(ctx.expresion(0));
+        if (base.esError()) return Tipo.ERROR;
+        if (base.base != Tipo.Base.STRUCT) {
+            errores.semantico(linea(ctx), "'" + ctx.expresion(0).getText()
+                    + "' no es un objeto (es " + base + ").");
             return Tipo.ERROR;
         }
-        if (vs.type.base != Tipo.Base.STRUCT) {
-            errores.semantico(linea(ctx), "'" + obj + "' no es un objeto (es " + vs.type + ").");
-            return Tipo.ERROR;
-        }
-        ClaseZ cz = clasesZ.get(vs.type.nombreStruct);
+        ClaseZ cz = clasesZ.get(base.nombreStruct);
         if (cz == null) {
-            errores.semantico(linea(ctx), "'" + obj + "' es estructura '" + vs.type.nombreStruct
-                    + "': no tiene métodos (use '.' para campos).");
+            errores.semantico(linea(ctx), "'" + base.nombreStruct
+                    + "' es estructura: no tiene métodos.");
             return Tipo.ERROR;
         }
-        ClaseZ.MetodoZ mm = cz.metodos.get(met);
+        String met = ctx.ID().getText();
+        List<Tipo> args = new ArrayList<>();
+        for (int i = 1; i < ctx.expresion().size(); i++) args.add(visit(ctx.expresion(i)));
+        ClaseZ.MetodoZ mm = cz.metodo(met, args.size());
         if (mm == null) {
-            errores.semantico(linea(ctx), "Método no definido: '" + vs.type.nombreStruct + "." + met + "'.");
+            errores.semantico(linea(ctx), "Método no definido: '" + base.nombreStruct + "." + met + "'.");
             return Tipo.ERROR;
         }
         if (mm.params.size() != args.size()) {
-            errores.semantico(linea(ctx), "Aridad incorrecta: '" + vs.type.nombreStruct + "." + met
+            errores.semantico(linea(ctx), "Aridad incorrecta: '" + base.nombreStruct + "." + met
                     + "' espera " + mm.params.size() + " pero se dieron " + args.size() + ".");
             return desdeCanon(mm.retorno);
         }
         if (!paramsCompatiblesZ(mm, args)) {
-            errores.semantico(linea(ctx), "Los argumentos de '" + vs.type.nombreStruct + "." + met
+            errores.semantico(linea(ctx), "Los argumentos de '" + base.nombreStruct + "." + met
                     + "' no son compatibles con sus parámetros.");
         }
         return desdeCanon(mm.retorno);
     }
 
     @Override
-    public Tipo visitLlamada_Actio_Exp(PigLatinParserParser.Llamada_Actio_ExpContext ctx) {
-        String fn = ctx.ID().getText();
-        if (fn.equals("leer")) return Tipo.CADENA;
+    public Tipo visitAcceso_Indice(PigLatinParserParser.Acceso_IndiceContext ctx) {
+        Tipo base = visit(ctx.expresion(0));
+        Tipo idx = visit(ctx.expresion(1));
+        if (!idx.esError() && idx.base != Tipo.Base.ENTERO) {
+            errores.semantico(linea(ctx), "El índice de la serie debe ser numerus.");
+        }
+        if (base.esError()) return Tipo.ERROR;
+        if (base.base != Tipo.Base.SERIES) {
+            errores.semantico(linea(ctx), "No es una serie (es " + base + ").");
+            return Tipo.ERROR;
+        }
+        return base.elementos;
+    }
+
+    @Override
+    public Tipo visitNovus_Exp(PigLatinParserParser.Novus_ExpContext ctx) {
+        String clase = ctx.ID().getText();
         List<Tipo> args = new ArrayList<>();
         for (PigLatinParserParser.ExpresionContext e : ctx.expresion()) args.add(visit(e));
-        FuncInfo fi = funcionesY.get(fn);
-        if (fi == null) {
-            errores.semantico(linea(ctx), "Función no definida: '" + fn + "' no existe en ningún import .y.");
-            return Tipo.ERROR;
-        }
-        if (fi.params.size() != args.size()) {
-            errores.semantico(linea(ctx), "Aridad incorrecta: '" + fn + "' espera " + fi.params.size()
-                    + " argumento(s) pero se dieron " + args.size() + ".");
-            return desdeCanon(fi.retorno);
-        }
-        for (int i = 0; i < args.size(); i++) {
-            Tipo esp = desdeCanon(fi.params.get(i).tipo);
-            Tipo real = args.get(i);
-            if (!esp.esError() && !real.esError() && !Tipo.asignablePig(esp, real)) {
-                errores.semantico(linea(ctx), "El argumento " + (i + 1) + " de '" + fn
-                        + "' espera " + esp + " pero se dio " + real + ".");
-            }
-        }
-        return desdeCanon(fi.retorno);
-    }
-
-    @Override
-    public Tipo visitLlamada_Ratio_Tipo(PigLatinParserParser.Llamada_Ratio_TipoContext ctx) {
-        String fn = ctx.ID().getText();
-        List<Tipo> args = new ArrayList<>();
-        for (PigLatinParserParser.ExpresionContext e : ctx.expresion()) args.add(visit(e));
-        FuncInfo fi = funcionesY.get(fn);
-        Tipo declarado = Tipo.desdePig(ctx.tipos().getText(), tabla, linea(ctx), null);
-        if (fi == null) {
-            errores.semantico(linea(ctx), "Función no definida: '" + fn + "' no existe en ningún import .y.");
-            return declarado;
-        }
-        Tipo real = desdeCanon(fi.retorno);
-        if (!declarado.esError() && !real.esError() && !Tipo.asignablePig(declarado, real)
-                && !declarado.equals(real)) {
-            errores.semantico(linea(ctx), "La función '" + fn + "' retorna " + real
-                    + " pero se declaró " + declarado + ".");
-        }
-        return real.esError() ? declarado : real;
-    }
-
-    @Override
-    public Tipo visitLlamada_Series_Structura(PigLatinParserParser.Llamada_Series_StructuraContext ctx) {
-        List<TerminalNode> ids = ctx.ID();
-        VarSymbol vs = tabla.obtenerVar(ids.get(0).getText());
-        Tipo tIdx = visit(ctx.expresion());
-        if (!tIdx.esError() && tIdx.base != Tipo.Base.ENTERO) {
-            errores.semantico(linea(ctx), "El índice de la serie debe ser numerus.");
-        }
-        if (vs == null) {
-            errores.semantico(linea(ctx), "La variable no ha sido declarada: '" + ids.get(0).getText() + "'.");
-            return Tipo.ERROR;
-        }
-        if (vs.type.base != Tipo.Base.SERIES || vs.type.elementos.base != Tipo.Base.STRUCT) {
-            errores.semantico(linea(ctx), "No es una serie de estructuras: '" + ids.get(0).getText() + "'.");
-            return Tipo.ERROR;
-        }
-        Tipo t = tipoCampoEstructura(vs.type.elementos.nombreStruct, ids.get(1).getText(), linea(ctx));
-        return t == null ? Tipo.ERROR : t;
-    }
-
-    @Override
-    public Tipo visitLlamada_Series_Valor(PigLatinParserParser.Llamada_Series_ValorContext ctx) {
-        List<TerminalNode> ids = ctx.ID();
-        VarSymbol vs = tabla.obtenerVar(ids.get(0).getText());
-        Tipo tIdx = visit(ctx.expresion());
-        if (!tIdx.esError() && tIdx.base != Tipo.Base.ENTERO) {
-            errores.semantico(linea(ctx), "El índice de la serie debe ser numerus.");
-        }
-        if (vs == null) {
-            errores.semantico(linea(ctx), "La variable no ha sido declarada: '" + ids.get(0).getText() + "'.");
-            return Tipo.ERROR;
-        }
-        if (vs.type.base != Tipo.Base.STRUCT) {
-            errores.semantico(linea(ctx), "No es una estructura: '" + ids.get(0).getText() + "'.");
-            return Tipo.ERROR;
-        }
-        Tipo tCampo = tipoCampoEstructura(vs.type.nombreStruct, ids.get(1).getText(), linea(ctx));
-        if (tCampo == null) return Tipo.ERROR;
-        if (tCampo.base != Tipo.Base.SERIES) {
-            errores.semantico(linea(ctx), "El atributo '" + ids.get(1).getText() + "' no es una serie.");
-            return Tipo.ERROR;
-        }
-        return tCampo.elementos;
-    }
-
-    @Override
-    public Tipo visitLlmada_Elemnto_FUnc_Serie(PigLatinParserParser.Llmada_Elemnto_FUnc_SerieContext ctx) {
-        List<TerminalNode> ids = ctx.ID();
-        List<PigLatinParserParser.ExpresionContext> exprs = ctx.expresion();
-        Tipo tIdx = visit(exprs.get(0));
-        if (!tIdx.esError() && tIdx.base != Tipo.Base.ENTERO) {
-            errores.semantico(linea(ctx), "El índice de la serie debe ser numerus.");
-        }
-        VarSymbol vs = tabla.obtenerVar(ids.get(0).getText());
-        if (vs == null) {
-            errores.semantico(linea(ctx), "La variable no ha sido declarada: '" + ids.get(0).getText() + "'.");
-            return Tipo.ERROR;
-        }
-        Tipo tElem = vs.type;
-        if (tElem.base == Tipo.Base.SERIES) {
-            tElem = tElem.elementos;
-        } else if (tElem.base == Tipo.Base.STRUCT) {
-            Tipo tc = tipoCampoEstructura(tElem.nombreStruct, ids.get(1).getText(), linea(ctx));
-            if (tc == null) return Tipo.ERROR;
-            tElem = tc.base == Tipo.Base.SERIES ? tc.elementos : tc;
-        }
-        List<Tipo> args = new ArrayList<>();
-        for (int i = 1; i < exprs.size(); i++) args.add(visit(exprs.get(i)));
-        if (tElem.base != Tipo.Base.STRUCT) {
-            errores.semantico(linea(ctx), "El elemento no es un objeto: no tiene métodos.");
-            return Tipo.ERROR;
-        }
-        ClaseZ cz = clasesZ.get(tElem.nombreStruct);
-        if (cz == null) {
-            errores.semantico(linea(ctx), "Clase no definida: '" + tElem.nombreStruct + "'.");
-            return Tipo.ERROR;
-        }
-        String met = ids.get(ids.size() - 1).getText();
-        ClaseZ.MetodoZ mm = cz.metodos.get(met);
-        if (mm == null) {
-            errores.semantico(linea(ctx), "Método no definido: '" + tElem.nombreStruct + "." + met + "'.");
-            return Tipo.ERROR;
-        }
-        if (mm.params.size() != args.size()) {
-            errores.semantico(linea(ctx), "Aridad incorrecta: '" + tElem.nombreStruct + "." + met + "'.");
-            return desdeCanon(mm.retorno);
-        }
-        if (!paramsCompatiblesZ(mm, args)) {
-            errores.semantico(linea(ctx), "Los argumentos de '" + met + "' no son compatibles.");
-        }
-        return desdeCanon(mm.retorno);
+        validarConstructor(clase, args, linea(ctx));
+        return Tipo.struct(clase);
     }
 
     @Override
