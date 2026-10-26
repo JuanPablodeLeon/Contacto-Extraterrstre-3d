@@ -16,6 +16,8 @@ vars_par: VARIABILES bloque_vars*
 
         // esto <id> : <tipo> <valor> ;
 bloque_vars: ESTO ID DOS_PUNTOS tipos expresion PUNTO_COMA
+          // esto <id> : novus <id_objeto>(...) ;
+           | ESTO ID DOS_PUNTOS NOVUS ID LPAREN bloque_objt? RPAREN PUNTO_COMA
           // esto <id> : <valor> ; <- Solo para expresiones booleanas
            | ESTO ID DOS_PUNTOS expresion PUNTO_COMA
            // -------------- ARRAYS -----------------------
@@ -27,8 +29,6 @@ bloque_vars: ESTO ID DOS_PUNTOS tipos expresion PUNTO_COMA
           // esto <id> : <id_estructura> {...} ;
            | ESTO ID DOS_PUNTOS ID LLLAVE bloque_varios RLLAVE PUNTO_COMA
            // ---------------- OBJETOS -----------------------
-          // esto <id> : novus <id_objeto>(...) ;
-           | ESTO ID DOS_PUNTOS NOVUS ID LPAREN bloque_objt? RPAREN PUNTO_COMA
           // series <id>·[<valor>] : <id_objeto> ;
            | SERIES ID LCORCH expresion RCORCH DOS_PUNTOS ID PUNTO_COMA
            ;
@@ -93,6 +93,12 @@ expresion: RESTA expresion # Umenos
          | NON expresion # Negacion
         // (...)
          | LPAREN expresion RPAREN # Parentesis
+        // <exp>.<id>(...)
+         | expresion PUNTO ID LPAREN (expresion (COMA expresion)* )? RPAREN # Metodo_Cadena
+        // <exp>.<id>
+         | expresion PUNTO ID # Acceso_Cadena
+        // <exp>[<valor>]
+         | expresion LCORCH expresion RCORCH # Acceso_Indice
         // <valor> (* /) <valor>
          | expresion ops1=(MULTI | DIV) expresion # MultDiv
         // <valor> (+ -) <valor>
@@ -105,22 +111,11 @@ expresion: RESTA expresion # Umenos
          | expresion ops1=(MENOR | MAYOR) expresion # MenorMayor
         // <valor> (&& ||) <valor>
          | expresion ops1=(AND | OR) expresion # AndOr
-       // <id>[<valor>]
-         | ID LCORCH expresion RCORCH # Llamada_Elemento_Series
-        // <id>.<id>[<valor>].<id>(...)
-         | ID PUNTO ID LCORCH expresion RCORCH PUNTO ID LPAREN (expresion (COMA expresion)* )? RPAREN # Llmada_Elemnto_FUnc_Serie
-       // <id_structura>.<id_propiedad>
-         | ID PUNTO ID # Llamada_Propiedad_Structura
-       // <id>.<id>(...)
-         | ID PUNTO ID LPAREN (expresion (COMA expresion)* )? RPAREN # LLamada_Propiedad_Funcion
          // <id> (...)
          | ID LPAREN (expresion (COMA expresion)* )? RPAREN # Llamada_Actio_Exp
         // <tipo> <id> (...)
          | tipos ID LPAREN (expresion (COMA expresion)* )? RPAREN # Llamada_Ratio_Tipo
-       // <id>[<valor>].<id>
-         | ID LCORCH expresion RCORCH PUNTO ID # Llamada_Series_Structura
-        // <id>.<id>[<valor>]
-         | ID PUNTO ID LCORCH expresion RCORCH # Llamada_Series_Valor
+         | NOVUS ID LPAREN (expresion (COMA expresion)* )? RPAREN # Novus_Exp
          | VERUM # VerumValor
          | FALSUS # FalsusValor
          | ID # Identificador

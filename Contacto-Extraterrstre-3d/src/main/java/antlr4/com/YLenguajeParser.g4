@@ -5,7 +5,7 @@ options { tokenVocab=YLenguajeLexer; }
 inicio: NEWLINE* bloq_estruc? bloq_func NEWLINE* EOF
       ;
            // %estructuas ...
-bloq_estruc: ESTRUCTURAS NEWLINE INDENT esctruc+ DEDENT
+bloq_estruc: ESTRUCTURAS NEWLINE (INDENT esctruc+ DEDENT | esctruc*)
            ;
 
         // estructua <id> : ...
@@ -13,7 +13,7 @@ esctruc: ESTRUCTURA ID DOS_PUNTOS NEWLINE INDENT definiciones+ DEDENT
        ;
 
         // %funciones ...
-bloq_func: FUNCIONES NEWLINE INDENT bloc_func+ DEDENT
+bloq_func: FUNCIONES NEWLINE (INDENT bloc_func+ DEDENT | bloc_func*)
          ;
 
         // definir <id> (...) -> <tipo> : ....
@@ -44,6 +44,12 @@ val_arreglo: expresion (COMA expresion)*
 
 instrucciones: definiciones
              | asignaciones
+             // llamada suelta: funcion(...) o objeto.metodo(...)
+             | llamada NEWLINE
+             // leer() como instruccion
+             | LEER LPAREN RPAREN NEWLINE
+             // linea en blanco dentro de un bloque
+             | NEWLINE
              // imprimir ()
              | IMPRIMIR LPAREN expresion? RPAREN NEWLINE
              // si(<exp bool>) entonces ...
@@ -68,6 +74,10 @@ bloc_si: (SINO LPAREN expresion RPAREN ENTONCES NEWLINE bloque)* (CONTRARIO NEWL
 
 bloque: INDENT instrucciones+ DEDENT
       ;
+
+llamada: ID LPAREN (expresion (COMA expresion)*)? RPAREN
+       | ID PUNTO ID LPAREN (expresion (COMA expresion)*)? RPAREN
+       ;
 
 bloque_elegir: (CASO expresion DOS_PUNTOS NEWLINE bloque)+ SIEMPRE DOS_PUNTOS NEWLINE bloque
              ;
@@ -96,6 +106,20 @@ asignaciones: ID PUNTO ID ASIG expresion NEWLINE
             | ID INCREMENTO NEWLINE
            // <id> --
             | ID DECREMENTO NEWLINE
+           // <id>.<id> ++ / --
+            | ID PUNTO ID (INCREMENTO | DECREMENTO) NEWLINE
+           // <id>.<id>[<valor>] ++ / --
+            | ID PUNTO ID (LCORCH expresion RCORCH)+ (INCREMENTO | DECREMENTO) NEWLINE
+           // <id>[<valor>] ++ / --
+            | ID (LCORCH expresion RCORCH)+ (INCREMENTO | DECREMENTO) NEWLINE
+           // <id> += -= *= /= <valor>
+            | ID (ADD_ASSIGN | SUB_ASSIGN | MUL_ASSIGN | DIV_ASSIGN) expresion NEWLINE
+           // <id>.<id> += -= *= /= <valor>
+            | ID PUNTO ID (ADD_ASSIGN | SUB_ASSIGN | MUL_ASSIGN | DIV_ASSIGN) expresion NEWLINE
+           // <id>.<id>[<valor>] += -= *= /= <valor>
+            | ID PUNTO ID (LCORCH expresion RCORCH)+ (ADD_ASSIGN | SUB_ASSIGN | MUL_ASSIGN | DIV_ASSIGN) expresion NEWLINE
+           // <id>[<valor>] += -= *= /= <valor>
+            | ID (LCORCH expresion RCORCH)+ (ADD_ASSIGN | SUB_ASSIGN | MUL_ASSIGN | DIV_ASSIGN) expresion NEWLINE
             ;
 
         // - <val>
@@ -104,8 +128,8 @@ expresion: RESTA expresion
          | NOT expresion
         // (...)
          | LPAREN expresion RPAREN
-        // <val> / * <val>
-         | expresion (MULT | DIV) expresion
+        // <val> * / % <val>
+         | expresion (MULT | DIV | MOD) expresion
          // <val> + - <val>
          | expresion (SUMA | RESTA) expresion
          // <val> == != <val>
@@ -120,6 +144,12 @@ expresion: RESTA expresion
          | ID (LCORCH expresion RCORCH)+
         // <id>.<id>
          | ID PUNTO ID
+        // <id>.<id>[...] <- campo que es arreglo
+         | ID PUNTO ID (LCORCH expresion RCORCH)+
+        // <id>( <valor> , <valor>)
+         | ID LPAREN (expresion (COMA expresion)*)? RPAREN
+        // <id>.<id>( <valor> , <valor>)
+         | ID PUNTO ID LPAREN (expresion (COMA expresion)*)? RPAREN
          // leer()
          | LEER LPAREN RPAREN
          | VERDADERO

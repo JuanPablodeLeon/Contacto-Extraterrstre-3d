@@ -1,4 +1,4 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/ZetarianoParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/ZetarianoParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -41,11 +41,23 @@ public interface ZetarianoParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitBloque_si(ZetarianoParserParser.Bloque_siContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link ZetarianoParserParser#switch_cuerpo}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSwitch_cuerpo(ZetarianoParserParser.Switch_cuerpoContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link ZetarianoParserParser#bloque_switch}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitBloque_switch(ZetarianoParserParser.Bloque_switchContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ZetarianoParserParser#bloque_default}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBloque_default(ZetarianoParserParser.Bloque_defaultContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ZetarianoParserParser#declaracion}.
 	 * @param ctx the parse tree

@@ -1,4 +1,4 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/ZetarianoParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/ZetarianoParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -77,6 +77,18 @@ public class ZetarianoParserBaseListener implements ZetarianoParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterSwitch_cuerpo(ZetarianoParserParser.Switch_cuerpoContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSwitch_cuerpo(ZetarianoParserParser.Switch_cuerpoContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterBloque_switch(ZetarianoParserParser.Bloque_switchContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -84,6 +96,18 @@ public class ZetarianoParserBaseListener implements ZetarianoParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitBloque_switch(ZetarianoParserParser.Bloque_switchContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBloque_default(ZetarianoParserParser.Bloque_defaultContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBloque_default(ZetarianoParserParser.Bloque_defaultContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

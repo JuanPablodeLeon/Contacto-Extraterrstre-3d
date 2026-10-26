@@ -1,4 +1,4 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/PigLatinParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/PigLatinParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -162,30 +162,6 @@ public interface PigLatinParserListener extends ParseTreeListener {
 	 */
 	void exitAuto_cambio(PigLatinParserParser.Auto_cambioContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code Llmada_Elemnto_FUnc_Serie}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 */
-	void enterLlmada_Elemnto_FUnc_Serie(PigLatinParserParser.Llmada_Elemnto_FUnc_SerieContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code Llmada_Elemnto_FUnc_Serie}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 */
-	void exitLlmada_Elemnto_FUnc_Serie(PigLatinParserParser.Llmada_Elemnto_FUnc_SerieContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code Llamada_Series_Valor}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 */
-	void enterLlamada_Series_Valor(PigLatinParserParser.Llamada_Series_ValorContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code Llamada_Series_Valor}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 */
-	void exitLlamada_Series_Valor(PigLatinParserParser.Llamada_Series_ValorContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code Parentesis}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
 	 * @param ctx the parse tree
@@ -222,17 +198,17 @@ public interface PigLatinParserListener extends ParseTreeListener {
 	 */
 	void exitIntVal(PigLatinParserParser.IntValContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code Llamada_Series_Structura}
+	 * Enter a parse tree produced by the {@code Acceso_Indice}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
 	 * @param ctx the parse tree
 	 */
-	void enterLlamada_Series_Structura(PigLatinParserParser.Llamada_Series_StructuraContext ctx);
+	void enterAcceso_Indice(PigLatinParserParser.Acceso_IndiceContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code Llamada_Series_Structura}
+	 * Exit a parse tree produced by the {@code Acceso_Indice}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
 	 * @param ctx the parse tree
 	 */
-	void exitLlamada_Series_Structura(PigLatinParserParser.Llamada_Series_StructuraContext ctx);
+	void exitAcceso_Indice(PigLatinParserParser.Acceso_IndiceContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code CharVal}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
@@ -269,18 +245,6 @@ public interface PigLatinParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitNegacion(PigLatinParserParser.NegacionContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code Llamada_Elemento_Series}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 */
-	void enterLlamada_Elemento_Series(PigLatinParserParser.Llamada_Elemento_SeriesContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code Llamada_Elemento_Series}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 */
-	void exitLlamada_Elemento_Series(PigLatinParserParser.Llamada_Elemento_SeriesContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code MultDiv}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
@@ -342,6 +306,30 @@ public interface PigLatinParserListener extends ParseTreeListener {
 	 */
 	void exitLlamada_Ratio_Tipo(PigLatinParserParser.Llamada_Ratio_TipoContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code Novus_Exp}
+	 * labeled alternative in {@link PigLatinParserParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void enterNovus_Exp(PigLatinParserParser.Novus_ExpContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code Novus_Exp}
+	 * labeled alternative in {@link PigLatinParserParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void exitNovus_Exp(PigLatinParserParser.Novus_ExpContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code Metodo_Cadena}
+	 * labeled alternative in {@link PigLatinParserParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void enterMetodo_Cadena(PigLatinParserParser.Metodo_CadenaContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code Metodo_Cadena}
+	 * labeled alternative in {@link PigLatinParserParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void exitMetodo_Cadena(PigLatinParserParser.Metodo_CadenaContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code DoubleVal}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
 	 * @param ctx the parse tree
@@ -353,18 +341,6 @@ public interface PigLatinParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitDoubleVal(PigLatinParserParser.DoubleValContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code Llamada_Propiedad_Structura}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 */
-	void enterLlamada_Propiedad_Structura(PigLatinParserParser.Llamada_Propiedad_StructuraContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code Llamada_Propiedad_Structura}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 */
-	void exitLlamada_Propiedad_Structura(PigLatinParserParser.Llamada_Propiedad_StructuraContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code StringVal}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
@@ -402,17 +378,17 @@ public interface PigLatinParserListener extends ParseTreeListener {
 	 */
 	void exitMenorMayorIgual(PigLatinParserParser.MenorMayorIgualContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code LLamada_Propiedad_Funcion}
+	 * Enter a parse tree produced by the {@code Acceso_Cadena}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
 	 * @param ctx the parse tree
 	 */
-	void enterLLamada_Propiedad_Funcion(PigLatinParserParser.LLamada_Propiedad_FuncionContext ctx);
+	void enterAcceso_Cadena(PigLatinParserParser.Acceso_CadenaContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code LLamada_Propiedad_Funcion}
+	 * Exit a parse tree produced by the {@code Acceso_Cadena}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
 	 * @param ctx the parse tree
 	 */
-	void exitLLamada_Propiedad_Funcion(PigLatinParserParser.LLamada_Propiedad_FuncionContext ctx);
+	void exitAcceso_Cadena(PigLatinParserParser.Acceso_CadenaContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code VerumValor}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.

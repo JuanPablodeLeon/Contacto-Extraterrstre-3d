@@ -27,12 +27,12 @@ instruccion: declaracion
            | IF LPAREN expresion RPAREN instruccion
            // if (<exp bool>) .... else ....
            | IF LPAREN expresion RPAREN instruccion ELSE instruccion
-          // switch (<opcion>): .... default: ... break ;
-           | SWITCH LPAREN ID RPAREN bloque_switch+ DEFAULT DOS_PUNTOS instruccion* BREAK PUNTO_COMA
+          // switch (<opcion>) { ... } || switch (<opcion>) case ... default ...
+           | SWITCH LPAREN expresion RPAREN switch_cuerpo
            // for (<tipo> <id> = <valor> ; <exp bool> ; <id> ++ o --) {....} || for ( ; ; ) {....}
-           | FOR LPAREN ((tipos ID ASIGNACION expresion PUNTO_COMA expresion PUNTO_COMA ID (INCREMENTO | DECREMENTO)) | (PUNTO_COMA PUNTO_COMA)) RPAREN LLLAVE instruccion+ RLLAVE
+           | FOR LPAREN ((tipos ID ASIGNACION expresion PUNTO_COMA expresion PUNTO_COMA ID (INCREMENTO | DECREMENTO)) | (PUNTO_COMA PUNTO_COMA)) RPAREN (LLLAVE instruccion+ RLLAVE | instruccion)
            // while (<exp bool>) {...}
-           | WHILE LPAREN expresion RPAREN LLLAVE instruccion+ RLLAVE
+           | WHILE LPAREN expresion RPAREN (LLLAVE instruccion+ RLLAVE | instruccion)
            // do {...} while (<exp bool>) ;
            | DO LLLAVE instruccion+ RLLAVE WHILE LPAREN expresion RPAREN PUNTO_COMA
           // println(...);
@@ -54,9 +54,16 @@ instruccion: declaracion
 bloque_si: (ELSE IF LPAREN expresion RPAREN LLLAVE instruccion* RLLAVE)* (ELSE LLLAVE instruccion* RLLAVE)?
          ;
 
-            // case <id> : ... break; <- Puede no tener break
-bloque_switch: CASE expresion DOS_PUNTOS instruccion* (BREAK PUNTO_COMA)?
+switch_cuerpo: LLLAVE bloque_switch* bloque_default? RLLAVE
+             | bloque_switch+ bloque_default?
              ;
+
+            // case <id> : ... break; <- Puede no tener break
+bloque_switch: CASE expresion DOS_PUNTOS instruccion*
+             ;
+
+bloque_default: DEFAULT DOS_PUNTOS instruccion*
+              ;
 
            // <tipos> <id> = <value> ;
 declaracion: (tipos | ID) ID ASIGNACION expresion PUNTO_COMA
@@ -64,10 +71,10 @@ declaracion: (tipos | ID) ID ASIGNACION expresion PUNTO_COMA
            | (tipos | ID) (LCORCH RCORCH)+ ID ASIGNACION NEW tipos (LCORCH expresion RCORCH)+ PUNTO_COMA
           // <tipos> [] <id> = {...} ;
            | (tipos | ID) LCORCH RCORCH ID ASIGNACION LLLAVE params RLLAVE PUNTO_COMA
+          // <tipos>[]... <id> ;
+           | (tipos | ID) (LCORCH RCORCH)+ ID PUNTO_COMA
           // <tipos> <id> ;
            | (tipos | ID) ID PUNTO_COMA
-         // <id> = new <id>(...);
-           | ID ASIGNACION NEW ID LPAREN params? RPAREN PUNTO_COMA
           // <tipos> <id> = new
            | (tipos | ID) ID ASIGNACION NEW ID LPAREN params? RPAREN PUNTO_COMA
            ;
@@ -80,8 +87,6 @@ asignacion: ID SUMA_IGL expresion PUNTO_COMA
           | ID MULT_IGL expresion PUNTO_COMA
         // <id> = (<exp bool>) ? <exp> : <exp> ;
           | ID ASIGNACION LPAREN expresion RPAREN INTERRG expresion DOS_PUNTOS expresion PUNTO_COMA
-        // <id>[<value>] = <valor> ;
-          | ID LCORCH expresion RCORCH ASIGNACION expresion PUNTO_COMA
         // <id> = <valor> ;
           | lvalue ASIGNACION expresion PUNTO_COMA
         // <id> ++ ;
@@ -100,18 +105,24 @@ params: expresion (COMA expresion)*
 param_var: (tipos | ID) expresion (COMA (tipos | ID) expresion)*
          ;
 
-        // - <valor>
-expresion: RESTA expresion
-        // ! <exp>
-         | NOT expresion
-        // (...)
-         | LPAREN expresion RPAREN
-         // <exp>.<id>
-         | expresion PUNTO ID
+expresion: // <exp>.<id>
+           expresion PUNTO ID
          // <exp>.<id>(...)
          | expresion PUNTO ID LPAREN params? RPAREN
          // <exp>[<valor>]
          | expresion LCORCH expresion RCORCH
+        // - <valor>
+         | RESTA expresion
+        // ! <exp>
+         | NOT expresion
+        // (...)
+         | LPAREN expresion RPAREN
+         // <cond> ? <valor> : <valor>
+         | expresion INTERRG expresion DOS_PUNTOS expresion
+         // new <tipo>[<valor>]...
+         | NEW tipos (LCORCH expresion RCORCH)+
+         // new <id>(...)
+         | NEW ID LPAREN params? RPAREN
        // <valor> * / <valor>
          | expresion (MULT | DIV) expresion
        // <valor> % <valor>

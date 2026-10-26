@@ -1,4 +1,4 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/PigLatinParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/PigLatinParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -197,30 +197,6 @@ public class PigLatinParserBaseListener implements PigLatinParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLlmada_Elemnto_FUnc_Serie(PigLatinParserParser.Llmada_Elemnto_FUnc_SerieContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitLlmada_Elemnto_FUnc_Serie(PigLatinParserParser.Llmada_Elemnto_FUnc_SerieContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterLlamada_Series_Valor(PigLatinParserParser.Llamada_Series_ValorContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitLlamada_Series_Valor(PigLatinParserParser.Llamada_Series_ValorContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterParentesis(PigLatinParserParser.ParentesisContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -257,13 +233,13 @@ public class PigLatinParserBaseListener implements PigLatinParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLlamada_Series_Structura(PigLatinParserParser.Llamada_Series_StructuraContext ctx) { }
+	@Override public void enterAcceso_Indice(PigLatinParserParser.Acceso_IndiceContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLlamada_Series_Structura(PigLatinParserParser.Llamada_Series_StructuraContext ctx) { }
+	@Override public void exitAcceso_Indice(PigLatinParserParser.Acceso_IndiceContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -300,18 +276,6 @@ public class PigLatinParserBaseListener implements PigLatinParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitNegacion(PigLatinParserParser.NegacionContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterLlamada_Elemento_Series(PigLatinParserParser.Llamada_Elemento_SeriesContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitLlamada_Elemento_Series(PigLatinParserParser.Llamada_Elemento_SeriesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -377,6 +341,30 @@ public class PigLatinParserBaseListener implements PigLatinParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterNovus_Exp(PigLatinParserParser.Novus_ExpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitNovus_Exp(PigLatinParserParser.Novus_ExpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterMetodo_Cadena(PigLatinParserParser.Metodo_CadenaContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitMetodo_Cadena(PigLatinParserParser.Metodo_CadenaContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterDoubleVal(PigLatinParserParser.DoubleValContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -384,18 +372,6 @@ public class PigLatinParserBaseListener implements PigLatinParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitDoubleVal(PigLatinParserParser.DoubleValContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterLlamada_Propiedad_Structura(PigLatinParserParser.Llamada_Propiedad_StructuraContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitLlamada_Propiedad_Structura(PigLatinParserParser.Llamada_Propiedad_StructuraContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -437,13 +413,13 @@ public class PigLatinParserBaseListener implements PigLatinParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLLamada_Propiedad_Funcion(PigLatinParserParser.LLamada_Propiedad_FuncionContext ctx) { }
+	@Override public void enterAcceso_Cadena(PigLatinParserParser.Acceso_CadenaContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLLamada_Propiedad_Funcion(PigLatinParserParser.LLamada_Propiedad_FuncionContext ctx) { }
+	@Override public void exitAcceso_Cadena(PigLatinParserParser.Acceso_CadenaContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

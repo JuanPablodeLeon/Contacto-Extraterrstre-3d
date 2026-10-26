@@ -1,4 +1,4 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/ZetarianoParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/ZetarianoParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -53,7 +53,21 @@ public class ZetarianoParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitSwitch_cuerpo(ZetarianoParserParser.Switch_cuerpoContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitBloque_switch(ZetarianoParserParser.Bloque_switchContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitBloque_default(ZetarianoParserParser.Bloque_defaultContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

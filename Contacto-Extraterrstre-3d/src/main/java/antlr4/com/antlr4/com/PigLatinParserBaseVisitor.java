@@ -1,4 +1,4 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/PigLatinParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/PigLatinParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -123,20 +123,6 @@ public class PigLatinParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitLlmada_Elemnto_FUnc_Serie(PigLatinParserParser.Llmada_Elemnto_FUnc_SerieContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitLlamada_Series_Valor(PigLatinParserParser.Llamada_Series_ValorContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
 	@Override public T visitParentesis(PigLatinParserParser.ParentesisContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -158,7 +144,7 @@ public class PigLatinParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitLlamada_Series_Structura(PigLatinParserParser.Llamada_Series_StructuraContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAcceso_Indice(PigLatinParserParser.Acceso_IndiceContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -180,13 +166,6 @@ public class PigLatinParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitNegacion(PigLatinParserParser.NegacionContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitLlamada_Elemento_Series(PigLatinParserParser.Llamada_Elemento_SeriesContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -228,14 +207,21 @@ public class PigLatinParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitDoubleVal(PigLatinParserParser.DoubleValContext ctx) { return visitChildren(ctx); }
+	@Override public T visitNovus_Exp(PigLatinParserParser.Novus_ExpContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitLlamada_Propiedad_Structura(PigLatinParserParser.Llamada_Propiedad_StructuraContext ctx) { return visitChildren(ctx); }
+	@Override public T visitMetodo_Cadena(PigLatinParserParser.Metodo_CadenaContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitDoubleVal(PigLatinParserParser.DoubleValContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -263,7 +249,7 @@ public class PigLatinParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitLLamada_Propiedad_Funcion(PigLatinParserParser.LLamada_Propiedad_FuncionContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAcceso_Cadena(PigLatinParserParser.Acceso_CadenaContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

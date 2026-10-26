@@ -58,22 +58,26 @@ NOT: '!';
 //ARITMETICOS
 INCREMENTO: '++';
 DECREMENTO: '--';
+ADD_ASSIGN: '+=';
+SUB_ASSIGN: '-=';
+MUL_ASSIGN: '*=';
+DIV_ASSIGN: '/=';
 ASIG: '=';
 SUMA: '+';
 RESTA: '-';
 MULT: '*';
 DIV: '/';
+MOD: '%';
 
 ID: [a-zA-Z_][a-zA-Z0-9_]*;
 INT: [0-9]+;
 DECIMAL: INT '.' INT;
 STRING: '"' (ESC | ~["\\\r\n])* '"';
-CHAR: '\'' [a-zA-Z] '\'';
-fragment ESC: '\\"' | '\\\\' | '\\n' | '\\t' | '\\r';
+CHAR: '\'' (ESC | ~['\\\r\n]) '\'';
+fragment ESC: '\\' [btnrf"'\\];
 
 LINE_COMMENT: '//' ~[\r\n]* -> channel(HIDDEN);
 BLOCK_COMMENT: '/*' .*? '*/' -> channel(HIDDEN);
 
-NEWLINE: ('\r'? '\n' | '\r') [ \t]*;
-
-WS: [ \t]+ -> skip;
+NEWLINE: '\r'? '\n' | '\r';
+TAB: [ \t]+;

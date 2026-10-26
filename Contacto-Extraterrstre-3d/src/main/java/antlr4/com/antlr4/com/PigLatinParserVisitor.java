@@ -1,4 +1,4 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/PigLatinParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/PigLatinParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -103,20 +103,6 @@ public interface PigLatinParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAuto_cambio(PigLatinParserParser.Auto_cambioContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code Llmada_Elemnto_FUnc_Serie}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLlmada_Elemnto_FUnc_Serie(PigLatinParserParser.Llmada_Elemnto_FUnc_SerieContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code Llamada_Series_Valor}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLlamada_Series_Valor(PigLatinParserParser.Llamada_Series_ValorContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code Parentesis}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
 	 * @param ctx the parse tree
@@ -138,12 +124,12 @@ public interface PigLatinParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitIntVal(PigLatinParserParser.IntValContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code Llamada_Series_Structura}
+	 * Visit a parse tree produced by the {@code Acceso_Indice}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLlamada_Series_Structura(PigLatinParserParser.Llamada_Series_StructuraContext ctx);
+	T visitAcceso_Indice(PigLatinParserParser.Acceso_IndiceContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code CharVal}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
@@ -165,13 +151,6 @@ public interface PigLatinParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitNegacion(PigLatinParserParser.NegacionContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code Llamada_Elemento_Series}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLlamada_Elemento_Series(PigLatinParserParser.Llamada_Elemento_SeriesContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code MultDiv}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
@@ -208,19 +187,26 @@ public interface PigLatinParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLlamada_Ratio_Tipo(PigLatinParserParser.Llamada_Ratio_TipoContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code Novus_Exp}
+	 * labeled alternative in {@link PigLatinParserParser#expresion}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNovus_Exp(PigLatinParserParser.Novus_ExpContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Metodo_Cadena}
+	 * labeled alternative in {@link PigLatinParserParser#expresion}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMetodo_Cadena(PigLatinParserParser.Metodo_CadenaContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code DoubleVal}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitDoubleVal(PigLatinParserParser.DoubleValContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code Llamada_Propiedad_Structura}
-	 * labeled alternative in {@link PigLatinParserParser#expresion}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLlamada_Propiedad_Structura(PigLatinParserParser.Llamada_Propiedad_StructuraContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code StringVal}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
@@ -243,12 +229,12 @@ public interface PigLatinParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitMenorMayorIgual(PigLatinParserParser.MenorMayorIgualContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code LLamada_Propiedad_Funcion}
+	 * Visit a parse tree produced by the {@code Acceso_Cadena}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLLamada_Propiedad_Funcion(PigLatinParserParser.LLamada_Propiedad_FuncionContext ctx);
+	T visitAcceso_Cadena(PigLatinParserParser.Acceso_CadenaContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code VerumValor}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.

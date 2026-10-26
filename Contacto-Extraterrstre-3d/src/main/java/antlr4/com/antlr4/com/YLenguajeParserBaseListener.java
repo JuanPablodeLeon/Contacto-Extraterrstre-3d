@@ -1,4 +1,4 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -156,6 +156,18 @@ public class YLenguajeParserBaseListener implements YLenguajeParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitBloque(YLenguajeParser.BloqueContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterLlamada(YLenguajeParser.LlamadaContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitLlamada(YLenguajeParser.LlamadaContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

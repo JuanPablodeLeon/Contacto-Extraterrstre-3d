@@ -1,4 +1,4 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/YLenguajeParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -127,6 +127,16 @@ public interface YLenguajeParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitBloque(YLenguajeParser.BloqueContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link YLenguajeParser#llamada}.
+	 * @param ctx the parse tree
+	 */
+	void enterLlamada(YLenguajeParser.LlamadaContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link YLenguajeParser#llamada}.
+	 * @param ctx the parse tree
+	 */
+	void exitLlamada(YLenguajeParser.LlamadaContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link YLenguajeParser#bloque_elegir}.
 	 * @param ctx the parse tree

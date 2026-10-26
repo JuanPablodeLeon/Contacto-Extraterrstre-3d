@@ -1,4 +1,4 @@
-// Generated from /home/juanpa/Documentos/Contacto-Extraterrstre-3d/Contacto-Extraterrstre-3d/src/main/java/antlr4/com/ZetarianoParser.g4 by ANTLR 4.13.2
+// Generated from src/main/java/antlr4/com/ZetarianoParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -58,6 +58,16 @@ public interface ZetarianoParserListener extends ParseTreeListener {
 	 */
 	void exitBloque_si(ZetarianoParserParser.Bloque_siContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link ZetarianoParserParser#switch_cuerpo}.
+	 * @param ctx the parse tree
+	 */
+	void enterSwitch_cuerpo(ZetarianoParserParser.Switch_cuerpoContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ZetarianoParserParser#switch_cuerpo}.
+	 * @param ctx the parse tree
+	 */
+	void exitSwitch_cuerpo(ZetarianoParserParser.Switch_cuerpoContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link ZetarianoParserParser#bloque_switch}.
 	 * @param ctx the parse tree
 	 */
@@ -67,6 +77,16 @@ public interface ZetarianoParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitBloque_switch(ZetarianoParserParser.Bloque_switchContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ZetarianoParserParser#bloque_default}.
+	 * @param ctx the parse tree
+	 */
+	void enterBloque_default(ZetarianoParserParser.Bloque_defaultContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ZetarianoParserParser#bloque_default}.
+	 * @param ctx the parse tree
+	 */
+	void exitBloque_default(ZetarianoParserParser.Bloque_defaultContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link ZetarianoParserParser#declaracion}.
 	 * @param ctx the parse tree
