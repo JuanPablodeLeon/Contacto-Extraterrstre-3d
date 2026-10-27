@@ -6,18 +6,23 @@ inicio: bloc_main EOF
       ;
 
         // public class <id> {...}
-bloc_main: PUBLIC CLASS ID LLLAVE instrucciones* RLLAVE
+bloc_main: PUBLIC CLASS ID (EXTENDS ID)? LLLAVE instrucciones* RLLAVE
              ;
 
            // public <id> (...){...} <- Puede o no tener parametros, y puede o no tener instrucciones dentro
-instrucciones: PUBLIC ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
+instrucciones: OVERRIDE? PUBLIC ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
             // public void <id> (...) {...}
-             | PUBLIC VOID ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
+             | OVERRIDE? PUBLIC VOID ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
             // public <tipo> <id> (...) {...}
-             | PUBLIC (tipos | ID) ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
+             | OVERRIDE? PUBLIC (tipos | ID) ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
             //declaracion de variables
-             | declaracion+
+             | encapsulamiento? declaracion+
              ;
+
+encapsulamiento: PUBLIC
+               | PRIVATE
+               | PROTECTED
+               ;
 
 instruccion: declaracion
            | asignacion
@@ -146,6 +151,9 @@ expresion: // <exp>.<id>
      //    | ID PUNTO ID LPAREN params? RPAREN
 
         // <id>(...)
+        // this.<expresion>
+         | THIS PUNTO expresion
+        // <id> () <- Puede o no contener paramostros
          | ID LPAREN params? RPAREN
          | TRUE
          | FALSE

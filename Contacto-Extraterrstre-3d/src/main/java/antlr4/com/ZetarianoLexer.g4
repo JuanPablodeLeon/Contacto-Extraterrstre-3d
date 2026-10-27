@@ -26,6 +26,11 @@ PRINTLN: 'println';
 PRINT: 'print';
 READLN: 'readln';
 NULL_VAL: 'null';
+PRIVATE: 'private';
+PROTECTED: 'protected';
+OVERRIDE: '@Override';
+THIS: 'this';
+EXTENDS: 'extends';
 
 LPAREN: '(';
 RPAREN: ')';
