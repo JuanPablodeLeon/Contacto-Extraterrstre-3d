@@ -1,7 +1,8 @@
 package org.example.Views;
 
+import org.example.Views.Syntax.AntlrTokenMakerFactory;
+import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
@@ -18,8 +19,11 @@ public class ZetarianoEditor extends JPanel {
     public ZetarianoEditor(){
         setLayout(new BorderLayout());
 
-        textArea = new RSyntaxTextArea();
-        textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+        RSyntaxDocument document = new RSyntaxDocument(
+                AntlrTokenMakerFactory.INSTANCE,
+                AntlrTokenMakerFactory.SYNTAX_STYLE_ZETARIANO
+        );
+        textArea = new RSyntaxTextArea(document);
         textArea.setCodeFoldingEnabled(true);
         textArea.setAntiAliasingEnabled(true);
         textArea.setAutoIndentEnabled(true);

@@ -9,10 +9,17 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +30,8 @@ public class MainFrame extends JFrame {
     private final JTextArea consoleTextArea;
     private final JTextArea codigo3DireccionesTextArea;
     private final JTextArea codigoCTextArea;
+    private final JTextArea codigoRiscVTextArea;
+    private final JTextArea ejecucionRiscVTextArea;
     private final JTabbedPane tabbetPaneDown;
     private final MenuBar menuBar;
     private final ProjectManager projectManager;
@@ -46,11 +55,15 @@ public class MainFrame extends JFrame {
         consoleTextArea = new JTextArea();
         codigo3DireccionesTextArea = new JTextArea();
         codigoCTextArea = new JTextArea();
+        codigoRiscVTextArea = new JTextArea();
+        ejecucionRiscVTextArea = new JTextArea();
 
         tabbetPaneDown = new JTabbedPane();
         tabbetPaneDown.add("Consola", new JScrollPane(consoleTextArea));
         tabbetPaneDown.add("Codigo 3 Direciones", new JScrollPane(codigo3DireccionesTextArea));
         tabbetPaneDown.add("Codigo C", new JScrollPane(codigoCTextArea));
+        tabbetPaneDown.add("Codigo RISC-V", new JScrollPane(codigoRiscVTextArea));
+        tabbetPaneDown.add("Ejecucion RISC-V", new JScrollPane(ejecucionRiscVTextArea));
         cleanConsole();
 
         menuBar = new MenuBar();
@@ -129,7 +142,10 @@ public class MainFrame extends JFrame {
         menuBar.onTresDir(e -> mostrarTresDirecciones());
         menuBar.onCodigoC(e -> mostrarCodigoC());
         menuBar.onGuardarC(e -> guardarCodigoC());
+        menuBar.onCodigoRiscV(e -> mostrarCodigoRiscV());
+        menuBar.onGuardarRiscV(e -> guardarCodigoRiscV());
         menuBar.onCopyCodeC(e -> copiarCOdigoC());
+        menuBar.onRunRiscV(e -> ejecutarRiscV());
     }
 
     private void wireExplorer() {
@@ -684,16 +700,23 @@ public class MainFrame extends JFrame {
         consoleTextArea.setText("CONSOLA  -  Codex Latinus \n\n");
         codigo3DireccionesTextArea.setText("CODIGO 3 DIRECCIONES\n\n");
         codigoCTextArea.setText("CODIGO C\n\n");
+        codigoRiscVTextArea.setText("CODIGO RISC-V\n\n");
     }
 
     private void updateRunButtonState() {
         Component sel = editorTabs.getSelectedComponent();
         boolean soloPig = sel instanceof PigLatinEditor;
-        menuBar.setRunEnabled(soloPig);
+        boolean soloRiscv = (sel == ejecucionRiscVTextArea);
+
+        boolean habilitado = soloPig || soloRiscv;
+        menuBar.setRunEnabled(habilitado);
+       // menuBar.setRunEnabled(soloRiscv);
         if (soloPig) {
             menuBar.getRunButton().setToolTipText("Ejecutar .pig (valida imports .y/.z vía proyecto.xml y genera C3D + C)");
-        } else {
-            menuBar.getRunButton().setToolTipText("Solo disponible en archivos .pig");
+        } else if(soloRiscv){
+            menuBar.getRunButton().setToolTipText("Tener primero codigo Risc-V creado");
+        } else{
+            menuBar.getRunButton().setToolTipText("Solo disponible en archivos .pig o en la pestaña de Ejecutar RISC-V");
         }
     }
 
@@ -716,6 +739,10 @@ public class MainFrame extends JFrame {
 
     public JTextArea getCodigoCTextArea() {
         return codigoCTextArea;
+    }
+
+    public JTextArea getCodigoRiscVTextArea() {
+        return codigoRiscVTextArea;
     }
 
     public JTabbedPane getTabbetPaneDown() {
@@ -772,10 +799,12 @@ public class MainFrame extends JFrame {
                 codigo3DireccionesTextArea.setText("CODIGO 3 DIRECCIONES (" + lastResultado.getLenguaje() + ")\n\n"
                         + lastResultado.getCodigo3D());
                 codigoCTextArea.setText(lastResultado.getCodigoC());
+                codigoRiscVTextArea.setText(lastResultado.getCodigoRiscV());
             } else {
                 consoleTextArea.append("Revisa Reportes > Reporte de errores.\n");
                 codigo3DireccionesTextArea.setText("CODIGO 3 DIRECCIONES\n\n(sin traducción: hay errores)");
                 codigoCTextArea.setText("CODIGO C\n\n(sin traducción: hay errores)");
+                codigoRiscVTextArea.setText("CODIGO RISC-V\n\n(sin traducción: hay errores)");
             }
         } catch (Exception ex) {
             consoleTextArea.append("✖ Error inesperado al ejecutar: " + ex.getMessage() + "\n");
@@ -848,6 +877,11 @@ public class MainFrame extends JFrame {
         tabbetPaneDown.setSelectedIndex(2);
     }
 
+    private void mostrarCodigoRiscV() {
+        if (!exigirTraduccion("Código RISC-V")) return;
+        tabbetPaneDown.setSelectedIndex(3);
+    }
+
     private void guardarCodigoC() {
         if (!exigirTraduccion("Guardar C")) return;
         JFileChooser fc = new JFileChooser();
@@ -868,6 +902,245 @@ public class MainFrame extends JFrame {
                 JOptionPane.showMessageDialog(this, "Error al guardar: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private void guardarCodigoRiscV() {
+        if (!exigirTraduccion("Guardar RISC-V")) return;
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(new FileNameExtensionFilter("Ensamblador RISC-V (.s)", "s", "asm"));
+        fc.setSelectedFile(new File("salida.s"));
+        if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File f = fc.getSelectedFile();
+            if (!f.getName().toLowerCase().endsWith(".s")
+                    && !f.getName().toLowerCase().endsWith(".asm")) {
+                f = new File(f.getParentFile(), f.getName() + ".s");
+            }
+            try (FileWriter w = new FileWriter(f)) {
+                w.write(lastResultado.getCodigoRiscV());
+                JOptionPane.showMessageDialog(this,
+                        "Código RISC-V guardado en:\n" + f.getAbsolutePath()
+                                + "\n\nEjecutar en RARS:\njava -jar rars.jar nc me sm " + f.getName(),
+                        "Guardar RISC-V",
+                        JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error al guardar: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void ejecutarRiscV() {
+        // Verificar que exista código generado correctamente
+        if (lastResultado == null || !lastResultado.tieneTraduccion()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Primero ejecuta un programa sin errores para generar el código RISC-V.",
+                    "Ejecutar RISC-V",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        // Ubicación del JAR de RARS: se extrae del propio JAR de la aplicación
+        // a una carpeta temporal para que funcione sin importar desde dónde se
+        // ejecute.
+        final File rars;
+        try {
+            rars = localizarRars();
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No se encontró el archivo rars1_6.jar.\n\n"
+                            + "Se buscó como recurso interno (/lib/rars1_6.jar) "
+                            + "y en lib/.\n\n"
+                            + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        // Obtener el código generado por el compilador
+        String codigo = lastResultado.getCodigoRiscV();
+
+        if (codigo == null || codigo.isBlank()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No hay código RISC-V para ejecutar.",
+                    "Aviso",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        // El .s se escribe junto al RARS extraído (carpeta temporal escribible).
+        File libDir = rars.getAbsoluteFile().getParentFile();
+        if (libDir == null) {
+            libDir = new File(System.getProperty("java.io.tmpdir"));
+        }
+
+        if (!libDir.isDirectory() && !libDir.mkdirs()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No se pudo crear la carpeta temporal:\n" + libDir.getAbsolutePath(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        // 2) Archivo destino
+        final File archivoAsm = new File(libDir, "salida.s");
+        archivoAsm.deleteOnExit();
+
+        try {
+            Files.writeString(archivoAsm.toPath(), codigo, StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No se pudo guardar " + archivoAsm.getAbsolutePath()
+                            + "\n\n" + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        // Mostrar la consola
+        tabbetPaneDown.setSelectedIndex(4);
+        ejecucionRiscVTextArea.setText("Ejecutando programa RISC-V...\n");
+
+        // Ejecutar RARS en segundo plano
+        SwingWorker<String, Void> worker = new SwingWorker<>() {
+
+            @Override
+            protected String doInBackground() throws Exception {
+                ProcessBuilder pb = new ProcessBuilder(
+                        "java",
+                        "-jar",
+                        rars.getAbsolutePath(),
+                        "nc",
+                        "me",
+                        archivoAsm.getAbsolutePath()
+                );
+
+                pb.redirectErrorStream(true);
+
+                Process proceso = pb.start();
+                StringBuilder salida = new StringBuilder();
+
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(
+                                proceso.getInputStream(),
+                                StandardCharsets.UTF_8
+                        ))) {
+
+                    String linea;
+                    while ((linea = reader.readLine()) != null) {
+                        salida.append(linea).append("\n");
+                    }
+                }
+
+                int codigoSalida = proceso.waitFor();
+
+                if (codigoSalida != 0) {
+                    salida.append("\nRARS finalizó con código: ")
+                            .append(codigoSalida)
+                            .append("\n");
+                }
+
+                return salida.toString();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    String resultado = get();
+
+                    if (resultado.isBlank()) {
+                        ejecucionRiscVTextArea.setText(
+                                "RARS terminó sin producir salida de texto.\n"
+                                        + "\nArchivo RISC-V guardado en:\n"
+                                        + archivoAsm.getAbsolutePath()
+                        );
+                    } else {
+                        ejecucionRiscVTextArea.setText(resultado
+                                + "\nArchivo RISC-V guardado en:\n"
+                                + archivoAsm.getAbsolutePath());
+                    }
+
+                } catch (Exception ex) {
+                    ejecucionRiscVTextArea.setText(
+                            "Error al ejecutar RARS:\n"
+                                    + ex.getMessage()
+                                    + "\n\nArchivo RISC-V en:\n"
+                                    + archivoAsm.getAbsolutePath()
+                    );
+
+                } finally {
+                    ejecucionRiscVTextArea.setCaretPosition(
+                            ejecucionRiscVTextArea.getDocument().getLength()
+                    );
+
+                    // El archivo queda en la carpeta temporal y se elimina al
+                    // cerrar la aplicación.
+                }
+            }
+        };
+
+        worker.execute();
+    }
+
+    private static Path dirTrabajoRiscV;
+
+    /**
+     * Carpeta temporal donde se extrae RARS y se escribe {@code salida.s}.
+     */
+    private static synchronized Path carpetaTrabajoRiscV() throws IOException {
+        if (dirTrabajoRiscV == null || !Files.isDirectory(dirTrabajoRiscV)) {
+            Path dir = Files.createTempDirectory("contacto-extraterrestre-3d-");
+            dir.toFile().deleteOnExit();
+            dirTrabajoRiscV = dir;
+        }
+        return dirTrabajoRiscV;
+    }
+
+    /**
+     * Localiza {@code rars1_6.jar}. Primero lo extrae del propio JAR de la
+     * aplicación (recurso {@code /lib/rars1_6.jar}); si no existe, lo busca en
+     * {@code lib/} del directorio actual o junto al JAR (modo desarrollo).
+     */
+    private static File localizarRars() throws IOException {
+        try (InputStream recurso = MainFrame.class.getResourceAsStream("/lib/rars1_6.jar")) {
+            if (recurso != null) {
+                Path destino = carpetaTrabajoRiscV().resolve("rars1_6.jar");
+                if (!Files.isRegularFile(destino) || Files.size(destino) == 0) {
+                    Files.copy(recurso, destino, StandardCopyOption.REPLACE_EXISTING);
+                }
+                destino.toFile().deleteOnExit();
+                return destino.toFile();
+            }
+        }
+
+        // Modo desarrollo: lib/ relativo al directorio de ejecución.
+        Path juntoAlProyecto = Paths.get("lib", "rars1_6.jar");
+        if (Files.isRegularFile(juntoAlProyecto)) {
+            return juntoAlProyecto.toFile();
+        }
+
+        // lib/ junto al JAR de la aplicación.
+        try {
+            Path ubicacion = Paths.get(MainFrame.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI());
+            Path base = Files.isDirectory(ubicacion) ? ubicacion : ubicacion.getParent();
+            Path juntoAlJar = base.resolve("lib").resolve("rars1_6.jar");
+            if (Files.isRegularFile(juntoAlJar)) {
+                return juntoAlJar.toFile();
+            }
+        } catch (Exception ignored) {
+            // Sin ubicación accesible: se informa con el mensaje de error.
+        }
+
+        throw new IOException("No se encontró rars1_6.jar en el classpath ni en lib/.");
     }
 }
 

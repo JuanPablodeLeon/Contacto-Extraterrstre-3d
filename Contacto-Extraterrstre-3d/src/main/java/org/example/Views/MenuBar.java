@@ -21,7 +21,10 @@ public class MenuBar extends JMenuBar {
     private final JMenuItem tresDirItem;
     private final JMenuItem codigoCItem;
     private final JMenuItem guardarCItem;
+    private final JMenuItem codigoRiscVItem;
+    private final JMenuItem guardarRiscVItem;
     private final JButton copyCodeC;
+    private final JButton runRiscV;
 
     public MenuBar(){
         JMenu fileMenu = new JMenu("Archivo");
@@ -51,21 +54,28 @@ public class MenuBar extends JMenuBar {
         tresDirItem = new JMenuItem("Código 3 direcciones (cuartetas)");
         codigoCItem = new JMenuItem("Código C generado");
         guardarCItem = new JMenuItem("Guardar C (.c)...");
+        codigoRiscVItem = new JMenuItem("Código RISC-V generado");
+        guardarRiscVItem = new JMenuItem("Guardar RISC-V (.s)...");
         reportMenu.add(simbolosItem);
         reportMenu.add(tresDirItem);
         reportMenu.add(codigoCItem);
         reportMenu.add(guardarCItem);
+        reportMenu.add(codigoRiscVItem);
+        reportMenu.add(guardarRiscVItem);
 
         aboutItem = new JMenuItem("Acerca de");
         helpMenu.add(aboutItem);
 
         copyCodeC = createButton("Copiar Codigo C");
 
+        runRiscV = createButton("Ejecutar Risc-V");
+
         add(fileMenu);
         add(runButton);
         add(reportMenu);
         add(cleanButton);
         add(copyCodeC);
+        add(runRiscV);
         add(helpMenu);
     }
 
@@ -84,6 +94,9 @@ public class MenuBar extends JMenuBar {
     public void onTresDir(ActionListener l) { tresDirItem.addActionListener(l); }
     public void onCodigoC(ActionListener l) { codigoCItem.addActionListener(l); }
     public void onGuardarC(ActionListener l) { guardarCItem.addActionListener(l); }
+    public void onCodigoRiscV(ActionListener l) { codigoRiscVItem.addActionListener(l); }
+    public void onGuardarRiscV(ActionListener l) { guardarRiscVItem.addActionListener(l); }
+    public void onRunRiscV(ActionListener l){runRiscV.addActionListener(l);}
 
     public JButton getRunButton() { return runButton; }
 
