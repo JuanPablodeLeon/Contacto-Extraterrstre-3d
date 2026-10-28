@@ -8,7 +8,7 @@ IDE gráfico para compilar y traducir tres lenguajes didácticos:
 | `.y` | Y? | Biblioteca de funciones / estructuras. Se usa vía `import`. |
 | `.z` | Zetariano | Clases estilo Java. Se usa vía `import` + `novus`. |
 
-El programa `.pig` importa `.y` / `.z`, el IDE valida todo, y si no hay errores genera **Código de 3 Direcciones (cuartetas)** y **Código C** compilable con `gcc`.
+El programa `.pig` importa `.y` / `.z`, el IDE valida todo, y si no hay errores genera **Código de 3 Direcciones (cuartetas)** , **Código C** compilable con `gcc` y ***Risc-V*** compatible con `rars`.
 
 ## 1. Requisitos
 
@@ -16,6 +16,7 @@ El programa `.pig` importa `.y` / `.z`, el IDE valida todo, y si no hay errores 
 - Maven 3.8+
 - Dependencias (se descargan solas con Maven): ANTLR 4.13.2, RSyntaxTextArea 3.3.4
 - Para probar el C generado (opcional): `gcc`
+- Para probar el risc-v fuera del programa ejecutarlo con [RARS](https://github.com/TheThirdOne/rars):
 
 ## 2. Instalación y ejecución
 
@@ -33,11 +34,16 @@ Al arrancar aparece un mensaje de bienvenida con el flujo básico.
   - `Consola` — resultado de la compilación / errores resumidos.
   - `Codigo 3 Direciones` — cuartetas generadas (solo si no hay errores).
   - `Codigo C` — traducción a C (solo si no hay errores).
+  - `Codigo RISC-V` — traducción a risc-v (solo si no hay errores).
+  - `Ejecucion RISC-V` — ejecucion de risc-v.
 - **Barra superior**
   - `Archivo`: Nuevo proyecto… / Abrir proyecto… / Guardar / Salir
   - `Ejecutar`: compila el `.pig` activo
-  - `Reportes`: tokens, errores, AST, símbolos, C3D, C, guardar C
-  - `Limpiar consola` y `Ayuda > Acerca de`
+  - `Reportes`: tokens, errores, AST, símbolos, C3D, C, guardar C, Risc-V, guardar Risc-V
+  - `Limpiar consola`
+  - `Copiar Codigo C`
+  - `Ejecutar Risc-V`
+  - `Ayuda > Acerca de`
 
 > El botón **Ejecutar solo se habilita en archivos `.pig`**. Los `.y` / `.z` no se ejecutan solos: se validan como imports del `.pig`.
 
@@ -82,8 +88,31 @@ Reglas:
 3. Mira la `Consola`:
    - `✔ Ejecución exitosa…` → pasa a las pestañas `Codigo 3 Direciones` y `Codigo C`.
    - `----- Hay errores … -----` → abre `Reportes > Reporte de errores`, corrige y re-ejecuta.
+   
+## 4.6 Código RISC-V
 
-### 4.6 Ver reportes
+Cada compilación exitosa de un archivo `.pig` genera también ensamblador RISC-V
+(RV32 + extensión D para `double`). El resultado se puede ver en la pestaña
+**Codigo RISC-V** y guardar desde **Reportes > Guardar RISC-V (.s)...**.
+
+El código generado usa las convenciones descritas en `Elementos/RiscV.md`:
+
+- `s0`/`fp` como frame pointer y desplazamientos negativos para las ranuras.
+- `ra` respaldado en el prólogo y restaurado en el epílogo.
+- `jal ra, rutina` para llamadas y `ret` para retornar.
+- `stack[]` y `heap[]` simulados en `.data`, con `P` y `H` como índices.
+- Biblioteca de runtime para imprimir, leer y concatenar cadenas.
+
+Para ejecutarlo con [RARS](https://github.com/TheThirdOne/rars):
+
+```bash
+java -jar rars1_6.jar nc me sm programa.s
+```
+
+> El código está pensado para el modo RV32 por defecto de RARS; los valores del
+> lenguaje se representan como `double` de 64 bits.   
+
+### 4.7 Ver reportes
 
 `Reportes >`:
 
@@ -93,7 +122,7 @@ Reglas:
 - `Tabla de símbolos` / `Código 3 direcciones` / `Código C generado` — requieren una compilación **exitosa**; solo cambian la pestaña inferior.
 - `Guardar C (.c)…` — guarda el C en disco. El diálogo indica cómo compilarlo: `gcc salida.c -o salida`.
 
-### 4.7 Cerrar pestañas / archivos
+### 4.8 Cerrar pestañas / archivos
 
 - `x` de la pestaña, `Ctrl+W`, clic medio, o clic derecho > Cerrar / Cerrar otras / Cerrar todas. Al cerrar se guarda el archivo.
 
