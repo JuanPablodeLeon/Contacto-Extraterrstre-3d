@@ -1,4 +1,4 @@
-// Generated from src/main/java/antlr4/com/ZetarianoParser.g4 by ANTLR 4.13.2
+// Generated from ZetarianoParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -28,6 +28,18 @@ public interface ZetarianoParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitInstrucciones(ZetarianoParserParser.InstruccionesContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ZetarianoParserParser#modificador}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitModificador(ZetarianoParserParser.ModificadorContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ZetarianoParserParser#encapsulamiento}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEncapsulamiento(ZetarianoParserParser.EncapsulamientoContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ZetarianoParserParser#instruccion}.
 	 * @param ctx the parse tree

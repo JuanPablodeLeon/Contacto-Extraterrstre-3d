@@ -43,16 +43,58 @@ public class TraductorZ {
     }
 
     private void constructorDefecto(ClaseZ cz) {
-        tac.emit("FUNC_BEGIN", cz.nombre + "_new_0", cz.nombre, "-", "STACK", "constructor por defecto");
+        String cn = cz.nombre + "_new_0";
+        tac.emit("FUNC_BEGIN", cn, cz.nombre, "-", "STACK", "constructor por defecto");
+        tac.push();
         este = tac.declara("this", cz.nombre);
         tac.emit("DECLARE", cz.nombre, "-", este, "HEAP", "receptor");
         tac.emit("ALLOC_OBJECT", cz.nombre, "-", este, "HEAP", "reserva en heap");
+        tac.emit("PARAM", este, "-", "-");
+        tac.emit("CALL", cz.nombre + "_init_0", "1", "-");
         tac.emit("RETURN", este, "-", "-");
-        tac.emit("FUNC_END", cz.nombre + "_new_0", "-", "-", "STACK", "");
-        tac.retFunc().put(cz.nombre + "_new_0", cz.nombre);
+        tac.pop();
+        tac.emit("FUNC_END", cn, "-", "-", "STACK", "");
+        tac.retFunc().put(cn, cz.nombre);
+
+        String in = cz.nombre + "_init_0";
+        tac.emit("FUNC_BEGIN", in, "void", "-", "STACK", "inicializador por defecto");
+        tac.push();
+        este = tac.declara("this", cz.nombre);
+        tac.emit("PARAM_DECL", cz.nombre, "-", este, "HEAP", "receptor");
+        emitirInitPadre(cz, null);
+        tac.pop();
+        tac.emit("FUNC_END", in, "-", "-", "STACK", "");
+    }
+
+    /** Emite la llamada al inicializador del padre (explícita o implícita). */
+    private void emitirInitPadre(ClaseZ cz, ZetarianoParserParser.ParamsContext args) {
+        if (cz.padre == null) return;
+        ClaseZ padre = clases.get(cz.padre);
+        if (padre == null) {
+            avisos.add("No se encontró la clase padre '" + cz.padre + "' de '" + cz.nombre + "'.");
+            return;
+        }
+        int n = args == null ? 0 : args.expresion().size();
+        List<String> places = new ArrayList<>();
+        List<String> tipos = new ArrayList<>();
+        if (args != null) {
+            for (ZetarianoParserParser.ExpresionContext a : args.expresion()) {
+                String p = genZ(a);
+                places.add(p);
+                tipos.add(tac.tipoDe(p));
+            }
+        }
+        ClaseZ.MetodoZ ctor = padre.constructorPorTipos(tipos, clases);
+        String nombreInit = ctor != null
+                ? ctor.nombreInit(padre.nombre)
+                : padre.nombre + "_init_" + n;
+        tac.emit("PARAM", este, "-", "-");
+        for (String p : places) tac.emit("PARAM", p, "-", "-");
+        tac.emit("CALL", nombreInit, String.valueOf(n + 1), "-");
     }
 
     private void traducirConstructor(ClaseZ cz, ClaseZ.MetodoZ c) {
+        // --- constructor de creación: reserva y delega en el inicializador ---
         this.metodo = c;
         this.retornado = false;
         String cn = c.nombreC(cz.nombre);
@@ -66,13 +108,44 @@ public class TraductorZ {
                     e.equals(p.nombre) ? "parametro en STACK" : "parametro, sombra de " + p.nombre);
         }
         tac.emit("ALLOC_OBJECT", cz.nombre, "-", este, "HEAP", "reserva en heap");
-        for (ZetarianoParserParser.InstruccionContext s : c.ctx.instruccion()) stmZ(s);
-
-        for (ZetarianoParserParser.DeclaracionContext d : c.ctx.declaracion()) declZ(d);
+        tac.emit("PARAM", este, "-", "-");
+        for (ClaseZ.ParamZ p : c.params) {
+            String ph = tac.resolve(p.nombre);
+            tac.emit("PARAM", ph == null ? p.nombre : ph, "-", "-");
+        }
+        tac.emit("CALL", c.nombreInit(cz.nombre),
+                String.valueOf(c.params.size() + 1), "-");
+        tac.emit("RETURN", este, "-", "-");
         tac.pop();
-        if (!retornado) tac.emit("RETURN", este, "-", "-");
         tac.emit("FUNC_END", cn, "-", "-", "STACK", "");
         tac.retFunc().put(cn, cz.nombre);
+
+        // --- inicializador: llama al padre y ejecuta el cuerpo ---
+        this.metodo = c;
+        this.retornado = false;
+        String in = c.nombreInit(cz.nombre);
+        tac.emit("FUNC_BEGIN", in, "void", "-", "STACK", "");
+        tac.push();
+        este = tac.declara("this", cz.nombre);
+        tac.emit("PARAM_DECL", cz.nombre, "-", este, "HEAP", "receptor");
+        for (ClaseZ.ParamZ p : c.params) {
+            String e = tac.declara(p.nombre, p.tipo);
+            tac.emit("PARAM_DECL", p.tipo, "-", e, TraductorPigY.segDe(p.tipo),
+                    e.equals(p.nombre) ? "parametro en STACK" : "parametro, sombra de " + p.nombre);
+        }
+        List<ZetarianoParserParser.InstruccionContext> cuerpo = c.ctx.instruccion();
+        int posSuper = -1;
+        for (int i = 0; i < cuerpo.size(); i++) {
+            if (cuerpo.get(i).SUPER() != null) { posSuper = i; break; }
+        }
+        emitirInitPadre(cz, posSuper >= 0 ? cuerpo.get(posSuper).params() : null);
+        for (int i = 0; i < cuerpo.size(); i++) {
+            if (i == posSuper) continue;
+            stmZ(cuerpo.get(i));
+        }
+        for (ZetarianoParserParser.DeclaracionContext d : c.ctx.declaracion()) declZ(d);
+        tac.pop();
+        tac.emit("FUNC_END", in, "-", "-", "STACK", "");
         this.metodo = null;
     }
 
@@ -283,6 +356,9 @@ public class TraductorZ {
             retornado = true;
             return;
         }
+        if (s.SUPER() != null) {
+            return; // ya se emitió al inicio del inicializador
+        }
         if (!s.expresion().isEmpty()) {
             genZ(s.expresion(0));
             return;
@@ -447,14 +523,22 @@ public class TraductorZ {
         if (cz == null) throw new RuntimeException("Clase no definida: '" + clase + "'.");
         List<ZetarianoParserParser.ExpresionContext> args = d.params() == null
                 ? List.of() : d.params().expresion();
+        List<String> places = new ArrayList<>();
+        List<String> tipos = new ArrayList<>();
         for (ZetarianoParserParser.ExpresionContext a : args) {
-            tac.emit("PARAM", genZ(a), "-", "-");
+            String p = genZ(a);
+            places.add(p);
+            tipos.add(tac.tipoDe(p));
         }
-        String e = tac.declara(var, clase);
-        tac.emit("DECLARE", clase, "-", e, "HEAP", "objeto en HEAP");
-        tac.emit("CALL", clase + "_new_" + args.size(), String.valueOf(args.size()), e, "HEAP", "");
-        if (!tipo.equals(clase) && !tipo.equals("numerus")) {
-            avisos.add("'" + var + "' declarado como " + tipo + " pero recibe new " + clase + ".");
+        ClaseZ.MetodoZ ctor = cz.constructorPorTipos(tipos, clases);
+        String nombreCtor = ctor != null ? ctor.nombreC(clase) : clase + "_new_" + args.size();
+        String tipoVar = clases.containsKey(tipo) ? tipo : clase;
+        String e = tac.declara(var, tipoVar);
+        tac.emit("DECLARE", tipoVar, "-", e, "HEAP", "objeto en HEAP");
+        for (String p : places) tac.emit("PARAM", p, "-", "-");
+        tac.emit("CALL", nombreCtor, String.valueOf(args.size()), e, "HEAP", "");
+        if (!tipoVar.equals(clase)) {
+            avisos.add("'" + var + "' declarado como " + tipoVar + " y recibe new " + clase + ".");
         }
     }
 
@@ -511,6 +595,30 @@ public class TraductorZ {
     }
 
     private void asigZ(ZetarianoParserParser.AsignacionContext a) {
+        if (a.THIS() != null) {
+            String campo = a.ID().getText();
+            String tc = tipoCampoActual(campo);
+            if (tc == null) {
+                throw new RuntimeException("Campo no definido: '" + claseDeActual() + "." + campo + "'.");
+            }
+            if (a.INCREMENTO() != null || a.DECREMENTO() != null) {
+                String op = a.DECREMENTO() != null ? "-" : "+";
+                String r = leerCampoActual(campo, tc);
+                tac.emit(op, r, "1", r, "STACK", a.DECREMENTO() != null ? "--" : "++");
+                tac.emit(".=", este, campo, r, GeneradorC.segmentoDe(tc), "");
+                return;
+            }
+            String v = genZ(a.expresion(0));
+            if (a.SUMA_IGL() != null || a.RESTA_IGL() != null || a.MULT_IGL() != null) {
+                String op = a.SUMA_IGL() != null ? "+" : (a.RESTA_IGL() != null ? "-" : "*");
+                String r = leerCampoActual(campo, tc);
+                String t = tac.tmp(tc);
+                tac.emit(op, r, v, t, GeneradorC.segmentoDe(tc), op + "=");
+                v = t;
+            }
+            tac.emit(".=", este, campo, v, GeneradorC.segmentoDe(tc), "");
+            return;
+        }
         if (a.SUMA_IGL() != null || a.RESTA_IGL() != null || a.MULT_IGL() != null) {
             String op = a.SUMA_IGL() != null ? "+" : (a.RESTA_IGL() != null ? "-" : "*");
             String var = a.ID().getText();
@@ -554,13 +662,29 @@ public class TraductorZ {
         }
     }
 
+    private String leerCampoActual(String nombre, String tipo) {
+        String t = tac.tmp(tipo);
+        tac.emit("=.", este, nombre, t, GeneradorC.segmentoDe(tipo), "");
+        return t;
+    }
+
+    private String claseDeActual() {
+        return actual == null ? "?" : actual.nombre;
+    }
+
+    private String tipoCampoActual(String nombre) {
+        if (actual == null) return null;
+        ClaseZ.CampoInfo ci = actual.buscarCampo(nombre, clases);
+        return ci == null ? null : ci.tipo;
+    }
+
     private String leerLugar(String nombre) {
         String e = tac.resolve(nombre);
         if (e != null) return e;
-        if (actual != null && actual.campos.containsKey(nombre)) {
-            String t = tac.tmp(actual.campos.get(nombre));
-            tac.emit("=.", este, nombre, t,
-                    GeneradorC.segmentoDe(actual.campos.get(nombre)), "");
+        String tc = tipoCampoActual(nombre);
+        if (tc != null) {
+            String t = tac.tmp(tc);
+            tac.emit("=.", este, nombre, t, GeneradorC.segmentoDe(tc), "");
             return t;
         }
         throw new RuntimeException("Variable no declarada: '" + nombre + "'.");
@@ -571,8 +695,7 @@ public class TraductorZ {
     }
 
     private boolean esCampo(String nombre) {
-        return tac.resolve(nombre) == null
-                && actual != null && actual.campos.containsKey(nombre);
+        return tac.resolve(nombre) == null && tipoCampoActual(nombre) != null;
     }
 
     private void escribirLugar(String nombre, String valor) {
@@ -581,7 +704,7 @@ public class TraductorZ {
             tac.emit("=", valor, "-", e, GeneradorC.segmentoDe(tac.tipoDe(e)), "");
             return;
         }
-        if (actual != null && actual.campos.containsKey(nombre)) {
+        if (tipoCampoActual(nombre) != null) {
             tac.emit(".=", este, nombre, valor,
                     GeneradorC.segmentoDe(tac.tipoDe(valor)), "");
             return;
@@ -595,7 +718,7 @@ public class TraductorZ {
         String base = ids.get(0).getText();
         String bplace = tac.resolve(base);
         boolean baseCampo = false;
-        if (bplace == null && actual != null && actual.campos.containsKey(base)) {
+        if (bplace == null && tipoCampoActual(base) != null) {
             baseCampo = true;
             bplace = este;
         }
@@ -625,15 +748,15 @@ public class TraductorZ {
         }
 
         String cur = baseCampo ? leerLugar(base) : bplace;
-        String curTipo = baseCampo ? actual.campos.get(base) : tac.tipoDe(cur);
+        String curTipo = baseCampo ? tipoCampoActual(base) : tac.tipoDe(cur);
         for (int i = 0; i < partes.size(); i++) {
             Object p = partes.get(i);
             boolean ultimo = i == partes.size() - 1;
             if (p instanceof String campo) {
                 String nombre = campo.substring(1);
                 ClaseZ cz = TraductorPigY.clases().get(curTipo);
-                String tCampo = (cz != null && cz.campos.containsKey(nombre))
-                        ? cz.campos.get(nombre) : "numerus";
+                ClaseZ.CampoInfo ci = cz == null ? null : cz.buscarCampo(nombre, clases);
+                String tCampo = ci != null ? ci.tipo : "numerus";
                 if (ultimo) {
                     tac.emit(".=", cur, nombre, valor, GeneradorC.segmentoDe(tCampo), "");
                 } else {
@@ -657,7 +780,112 @@ public class TraductorZ {
         }
     }
 
+    /** {@code super.metodo(...)} / {@code super.campo} con llamada estática al padre. */
+    private String genZSuper(ZetarianoParserParser.ExpresionContext e) {
+        ClaseZ padre = actual == null ? null : actual.clasePadre(clases);
+        if (padre == null) {
+            throw new RuntimeException("'super' sin clase padre en '" 
+                    + (actual == null ? "?" : actual.nombre) + "'.");
+        }
+        String nombre = e.ID() != null ? e.ID().getText() : "?";
+        if (e.LPAREN() != null || e.getText().contains("(")) {
+            List<String> args = new ArrayList<>();
+            if (e.params() != null) {
+                for (ZetarianoParserParser.ExpresionContext a : e.params().expresion()) {
+                    args.add(genZ(a));
+                }
+            }
+            ClaseZ.MetodoInfo mi = buscarMetodoPorArgs(padre, nombre, args);
+            if (mi == null) mi = buscarMetodoClase(padre, nombre, args.size());
+            if (mi == null) {
+                throw new RuntimeException("Método no definido en el padre: '"
+                        + padre.nombre + "." + nombre + "'.");
+            }
+            tac.emit("PARAM", este, "-", "-");
+            for (String ap : args) tac.emit("PARAM", ap, "-", "-");
+            String ret = mi.metodo.retorno;
+            if (ret.equals("void")) {
+                tac.emit("CALL", mi.metodo.nombreC(mi.clase.nombre),
+                        String.valueOf(args.size() + 1), "-");
+                return "0";
+            }
+            String t = tac.tmp(ret);
+            tac.emit("CALL", mi.metodo.nombreC(mi.clase.nombre),
+                    String.valueOf(args.size() + 1), t,
+                    GeneradorC.segmentoDe(ret), "");
+            return t;
+        }
+        ClaseZ.CampoInfo ci = padre.buscarCampo(nombre, clases);
+        if (ci == null) {
+            throw new RuntimeException("Campo no definido en el padre: '"
+                    + padre.nombre + "." + nombre + "'.");
+        }
+        String t = tac.tmp(ci.tipo);
+        tac.emit("=.", este, nombre, t, GeneradorC.segmentoDe(ci.tipo), "");
+        return t;
+    }
+
+    private ClaseZ.MetodoInfo buscarMetodoClase(ClaseZ desde, String nombre, int aridad) {
+        if (desde == null) return null;
+        for (ClaseZ.MetodoInfo mi : desde.metodosVisibles(nombre, clases)) {
+            if (mi.metodo.params.size() == aridad) return mi;
+        }
+        return null;
+    }
+
+    /** Elige la sobrecarga cuyos tipos de parámetro aceptan los argumentos dados. */
+    private ClaseZ.MetodoInfo buscarMetodoPorArgs(ClaseZ desde, String nombre, List<String> args) {
+        if (desde == null) return null;
+        for (ClaseZ.MetodoInfo mi : desde.metodosVisibles(nombre, clases)) {
+            if (mi.metodo.params.size() != args.size()) continue;
+            boolean ok = true;
+            for (int i = 0; i < args.size(); i++) {
+                if (!compatibleZ(mi.metodo.params.get(i).tipo, tac.tipoDe(args.get(i)))) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) return mi;
+        }
+        return null;
+    }
+
+    private boolean compatibleZ(String param, String arg) {
+        if (param == null || arg == null) return true;
+        String p = param.startsWith("&") ? param.substring(1) : param;
+        String a = arg.startsWith("&") ? arg.substring(1) : arg;
+        if (p.equals(a)) return true;
+        if (a.equals("null")) {
+            return clases.containsKey(p) || p.startsWith("series<") || p.equals("textum");
+        }
+        if (p.equals("decimalis") && a.equals("numerus")) return true;
+        ClaseZ pc = clases.get(p);
+        ClaseZ ac = clases.get(a);
+        return pc != null && ac != null && ac.esSubclaseDe(p, clases);
+    }
+
+    private String tipoCampoDe(String tipoBase, String campo) {
+        ClaseZ cz = TraductorPigY.clases().get(tipoBase);
+        if (cz != null) {
+            ClaseZ.CampoInfo ci = cz.buscarCampo(campo, clases);
+            if (ci != null) return ci.tipo;
+        }
+        return "numerus";
+    }
+
     private String genZ(ZetarianoParserParser.ExpresionContext e) {
+        if (e.getChild(0) instanceof TerminalNode t0) {
+            int ty0 = t0.getSymbol().getType();
+            if (ty0 == ZetarianoParserParser.THIS) {
+                if (e.getChildCount() == 1) return este;
+                if (e.getChild(2) instanceof ZetarianoParserParser.ExpresionContext inner) {
+                    return genZ(inner);
+                }
+            }
+            if (ty0 == ZetarianoParserParser.SUPER) {
+                return genZSuper(e);
+            }
+        }
         if (e.INTERRG() != null) {
             List<ZetarianoParserParser.ExpresionContext> es = e.expresion();
             String fin = tac.lbl();
@@ -681,13 +909,22 @@ public class TraductorZ {
         }
         if (e.NEW() != null && e.ID() != null) {
             String clase = e.ID().getText();
+            ClaseZ cz = TraductorPigY.clases().get(clase);
+            if (cz == null) throw new RuntimeException("Clase no definida: '" + clase + "'.");
             List<String> args = new ArrayList<>();
+            List<String> tipos = new ArrayList<>();
             if (e.params() != null) {
-                for (ZetarianoParserParser.ExpresionContext a : e.params().expresion()) args.add(genZ(a));
+                for (ZetarianoParserParser.ExpresionContext a : e.params().expresion()) {
+                    String p = genZ(a);
+                    args.add(p);
+                    tipos.add(tac.tipoDe(p));
+                }
             }
+            ClaseZ.MetodoZ ctor = cz.constructorPorTipos(tipos, clases);
+            String nombreCtor = ctor != null ? ctor.nombreC(clase) : clase + "_new_" + args.size();
             for (String ap : args) tac.emit("PARAM", ap, "-", "-");
             String t = tac.tmp(clase);
-            tac.emit("CALL", clase + "_new_" + args.size(), String.valueOf(args.size()), t, "HEAP", "");
+            tac.emit("CALL", nombreCtor, String.valueOf(args.size()), t, "HEAP", "");
             return t;
         }
         int n = e.getChildCount();
@@ -760,24 +997,23 @@ public class TraductorZ {
                 if (cz == null) {
                     throw new RuntimeException("El receptor no es objeto (tipo " + tipoR + "): " + e.getText());
                 }
-                ClaseZ.MetodoZ mm = cz.metodo(met, args.size());
-                if (mm == null) {
+                ClaseZ.MetodoInfo mi = buscarMetodoPorArgs(cz, met, args);
+                if (mi == null) mi = buscarMetodoClase(cz, met, args.size());
+                if (mi == null) {
                     throw new RuntimeException("Método no definido: '" + tipoR + "." + met + "'.");
-                }
-                if (mm.params.size() != args.size()) {
-                    throw new RuntimeException("Aridad incorrecta: '" + tipoR + "." + met
-                            + "' espera " + mm.params.size() + " pero se dieron " + args.size() + ".");
                 }
                 tac.emit("PARAM", rplace, "-", "-");
                 for (String ap : args) tac.emit("PARAM", ap, "-", "-");
-                if (mm.retorno.equals("void")) {
-                    tac.emit("CALL", mm.nombreC(tipoR),
+                String ret = mi.metodo.retorno;
+                if (ret.equals("void")) {
+                    tac.emit("CALL", "V:" + mi.metodo.firma(),
                             String.valueOf(args.size() + 1), "-");
                     return "0";
                 }
-                String t = tac.tmp(mm.retorno);
-                tac.emit("CALL", mm.nombreC(tipoR), String.valueOf(args.size() + 1), t,
-                        GeneradorC.segmentoDe(mm.retorno), "");
+                String t = tac.tmp(ret);
+                tac.emit("CALL", "V:" + mi.metodo.firma(),
+                        String.valueOf(args.size() + 1), t,
+                        GeneradorC.segmentoDe(ret), "");
                 return t;
             }
         }
@@ -786,9 +1022,7 @@ public class TraductorZ {
                 && e.getChild(2) instanceof TerminalNode tnf) {
             String rplace = genZ(recv);
             String tipoR = tac.tipoDe(rplace);
-            ClaseZ cz = TraductorPigY.clases().get(tipoR);
-            String tCampo = (cz != null && cz.campos.containsKey(tnf.getText()))
-                    ? cz.campos.get(tnf.getText()) : "numerus";
+            String tCampo = tipoCampoDe(tipoR, tnf.getText());
             String t = tac.tmp(tCampo);
             tac.emit("=.", rplace, tnf.getText(), t, GeneradorC.segmentoDe(tCampo), "");
             return t;
@@ -820,22 +1054,21 @@ public class TraductorZ {
                     args.add(genZ(a));
                 }
             }
-            ClaseZ.MetodoZ mm = actual == null ? null : actual.metodo(fn, args.size());
-            if (mm != null) {
-                if (mm.params.size() != args.size()) {
-                    throw new RuntimeException("Aridad incorrecta: '" + fn + "'.");
-                }
+            ClaseZ.MetodoInfo mi = buscarMetodoPorArgs(actual, fn, args);
+            if (mi == null) mi = buscarMetodoClase(actual, fn, args.size());
+            if (mi != null) {
                 tac.emit("PARAM", este, "-", "-");
                 for (String ap : args) tac.emit("PARAM", ap, "-", "-");
-                if (mm.retorno.equals("void")) {
-                    tac.emit("CALL", mm.nombreC(actual.nombre),
+                String ret = mi.metodo.retorno;
+                if (ret.equals("void")) {
+                    tac.emit("CALL", "V:" + mi.metodo.firma(),
                             String.valueOf(args.size() + 1), "-");
                     return "0";
                 }
-                String t = tac.tmp(mm.retorno);
-                tac.emit("CALL", mm.nombreC(actual.nombre),
+                String t = tac.tmp(ret);
+                tac.emit("CALL", "V:" + mi.metodo.firma(),
                         String.valueOf(args.size() + 1), t,
-                        GeneradorC.segmentoDe(mm.retorno), "");
+                        GeneradorC.segmentoDe(ret), "");
                 return t;
             }
             throw new RuntimeException("Función no definida: '" + fn + "'.");

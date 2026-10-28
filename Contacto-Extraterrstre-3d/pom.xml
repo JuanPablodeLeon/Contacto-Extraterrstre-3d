@@ -55,6 +55,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -77,6 +78,19 @@
                 </executions>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- Solo se empaqueta el simulador; salida.s es un artefacto temporal. -->
+            <resource>
+                <directory>lib</directory>
+                <targetPath>lib</targetPath>
+                <includes>
+                    <include>rars1_6.jar</include>
+                </includes>
+            </resource>
+        </resources>
     </build>
 
 </project>

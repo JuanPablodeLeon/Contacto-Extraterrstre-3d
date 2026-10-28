@@ -1,4 +1,4 @@
-// Generated from src/main/java/antlr4/com/ZetarianoParser.g4 by ANTLR 4.13.2
+// Generated from ZetarianoParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -48,6 +48,30 @@ public class ZetarianoParserBaseListener implements ZetarianoParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitInstrucciones(ZetarianoParserParser.InstruccionesContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterModificador(ZetarianoParserParser.ModificadorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitModificador(ZetarianoParserParser.ModificadorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterEncapsulamiento(ZetarianoParserParser.EncapsulamientoContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEncapsulamiento(ZetarianoParserParser.EncapsulamientoContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

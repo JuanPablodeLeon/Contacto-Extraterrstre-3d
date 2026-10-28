@@ -18,6 +18,12 @@ vars_par: VARIABILES bloque_vars*
 bloque_vars: ESTO ID DOS_PUNTOS tipos expresion PUNTO_COMA
           // esto <id> : novus <id_objeto>(...) ;
            | ESTO ID DOS_PUNTOS NOVUS ID LPAREN bloque_objt? RPAREN PUNTO_COMA
+          // esto <id> : novus <id_objeto>(...) : <tipo_estatico> ;
+           | ESTO ID DOS_PUNTOS NOVUS ID LPAREN bloque_objt? RPAREN DOS_PUNTOS tipos_varios PUNTO_COMA
+          // esto <id> : null : <tipo_estatico> ;
+           | ESTO ID DOS_PUNTOS NULL_VAL DOS_PUNTOS tipos_varios PUNTO_COMA
+          // esto <id> : <expresion> : <tipo_estatico> ;
+           | ESTO ID DOS_PUNTOS expresion DOS_PUNTOS tipos_varios PUNTO_COMA
           // esto <id> : <valor> ; <- Solo para expresiones booleanas
            | ESTO ID DOS_PUNTOS expresion PUNTO_COMA
            // -------------- ARRAYS -----------------------
@@ -118,6 +124,7 @@ expresion: RESTA expresion # Umenos
          | NOVUS ID LPAREN (expresion (COMA expresion)* )? RPAREN # Novus_Exp
          | VERUM # VerumValor
          | FALSUS # FalsusValor
+         | NULL_VAL # NullVal
          | ID # Identificador
          | DOUBLE # DoubleVal
          | INT # IntVal

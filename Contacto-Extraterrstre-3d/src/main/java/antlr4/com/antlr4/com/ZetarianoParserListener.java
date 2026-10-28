@@ -1,4 +1,4 @@
-// Generated from src/main/java/antlr4/com/ZetarianoParser.g4 by ANTLR 4.13.2
+// Generated from ZetarianoParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -37,6 +37,26 @@ public interface ZetarianoParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitInstrucciones(ZetarianoParserParser.InstruccionesContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ZetarianoParserParser#modificador}.
+	 * @param ctx the parse tree
+	 */
+	void enterModificador(ZetarianoParserParser.ModificadorContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ZetarianoParserParser#modificador}.
+	 * @param ctx the parse tree
+	 */
+	void exitModificador(ZetarianoParserParser.ModificadorContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ZetarianoParserParser#encapsulamiento}.
+	 * @param ctx the parse tree
+	 */
+	void enterEncapsulamiento(ZetarianoParserParser.EncapsulamientoContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ZetarianoParserParser#encapsulamiento}.
+	 * @param ctx the parse tree
+	 */
+	void exitEncapsulamiento(ZetarianoParserParser.EncapsulamientoContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link ZetarianoParserParser#instruccion}.
 	 * @param ctx the parse tree

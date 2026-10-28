@@ -14,6 +14,7 @@ LITTERA: 'littera';
 SERIES: 'series';
 FALSUS: 'falsus';
 VERUM: 'verum';
+NULL_VAL: 'null';
 NOVUS: 'novus';
 SI: 'si';
 FINIS: 'finis';

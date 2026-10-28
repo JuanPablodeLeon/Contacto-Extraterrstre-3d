@@ -16,10 +16,17 @@ public class ResultadoCompilacion {
     private final List<Cuarteta> cuartetas;
     private final String codigo3D;
     private final String codigoC;
+    private final String codigoRiscV;
     private final String consola;
 
     public ResultadoCompilacion(boolean exitoso, String lenguaje, List<Token> tokens, List<CompilerError> errores,
                                 List<Cuarteta> cuartetas, String codigo3D, String codigoC, String consola) {
+        this(exitoso, lenguaje, tokens, errores, cuartetas, codigo3D, codigoC, consola, "");
+    }
+
+    public ResultadoCompilacion(boolean exitoso, String lenguaje, List<Token> tokens, List<CompilerError> errores,
+                                List<Cuarteta> cuartetas, String codigo3D, String codigoC, String consola,
+                                String codigoRiscV) {
         this.exitoso = exitoso;
         this.lenguaje = lenguaje;
         this.tokens = tokens == null ? Collections.emptyList() : Collections.unmodifiableList(tokens);
@@ -27,6 +34,7 @@ public class ResultadoCompilacion {
         this.cuartetas = cuartetas == null ? Collections.emptyList() : Collections.unmodifiableList(cuartetas);
         this.codigo3D = codigo3D == null ? "" : codigo3D;
         this.codigoC = codigoC == null ? "" : codigoC;
+        this.codigoRiscV = codigoRiscV == null ? "" : codigoRiscV;
         this.consola = consola == null ? "" : consola;
     }
 
@@ -37,6 +45,7 @@ public class ResultadoCompilacion {
     public List<Cuarteta> getCuartetas() { return cuartetas; }
     public String getCodigo3D() { return codigo3D; }
     public String getCodigoC() { return codigoC; }
+    public String getCodigoRiscV() { return codigoRiscV; }
     public String getConsola() { return consola; }
 
     public boolean tieneTraduccion() {

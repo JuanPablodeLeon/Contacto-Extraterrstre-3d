@@ -1,6 +1,7 @@
-package org.example.Codigo3D.NewGenerate;
+package org.example.Codigo3D;
 
-import org.example.Codigo3D.Cuarteta;
+import org.example.Codigo3D.NewGenerate.C3DProgram;
+import org.example.Codigo3D.NewGenerate.OpCode;
 import org.example.Ejecutor.ClaseZ;
 import org.example.Semantico.StructSimbolo;
 import org.example.Semantico.Tipo;
@@ -712,14 +713,83 @@ public class Lowering {
             String v = val(params.get(i));
             emit(OpCode.STACK_WRITE, base + " + " + (i + 1), v, "", "");
         }
-        emit(OpCode.ASSIGN, base, "", "P", "");
-        emit(OpCode.CALL, target, String.valueOf(params.size()), "", "");
-        emit(OpCode.ASSIGN, oldP, "", "P", "");
+        if (target != null && target.startsWith("V:")) {
+            emitirDespacho(target, params, base, oldP);
+        } else {
+            emit(OpCode.ASSIGN, base, "", "P", "");
+            emit(OpCode.CALL, target, String.valueOf(params.size()), "", "");
+            emit(OpCode.ASSIGN, oldP, "", "P", "");
+        }
         if (q.res != null && !q.res.equals("-")) {
             String r = newTemp(tipoDe(q.res));
             emit(OpCode.STACK_READ, base, "", r, "");
             storeLugar(q.res, r, false);
         }
+    }
+
+    /** Despacho dinámico: usa el id de clase guardado en heap[receptor] (offset 0). */
+    private void emitirDespacho(String target, List<String> params,
+                                String base, String oldP) {
+        String spec = target.startsWith("V:") ? target.substring(2) : target;
+        String met;
+        String firma = null;
+        int aridad;
+        int par = spec.indexOf('(');
+        if (par >= 0) {
+            firma = spec;
+            met = spec.substring(0, par);
+            String dentro = spec.endsWith(")")
+                    ? spec.substring(par + 1, spec.length() - 1) : spec.substring(par + 1);
+            aridad = dentro.isBlank() ? 0 : dentro.split(",").length;
+        } else {
+            String[] partes = spec.split(":");
+            met = partes.length > 0 ? partes[0] : "?";
+            try {
+                aridad = Integer.parseInt(partes.length > 1 ? partes[1] : "0");
+            } catch (NumberFormatException e) {
+                aridad = 0;
+            }
+        }
+        List<String> etiquetas = new ArrayList<>();
+        List<String> rutinas = new ArrayList<>();
+        List<Integer> ids = new ArrayList<>();
+        for (Layout l : classLayouts.values()) {
+            if (!l.clase) continue;
+            ClaseZ cz = clases.get(l.nombre);
+            if (cz == null) continue;
+            ClaseZ.MetodoInfo mi = firma != null
+                    ? cz.buscarMetodoFirma(firma, clases)
+                    : cz.buscarMetodo(met, aridad, clases);
+            if (mi == null) continue;
+            etiquetas.add(newLabel());
+            rutinas.add(mi.metodo.nombreC(mi.clase.nombre));
+            ids.add(l.classId);
+        }
+        if (etiquetas.isEmpty()) {
+            emit(OpCode.NOP, "", "", "", "método virtual no encontrado: " + met);
+            return;
+        }
+        String recv = params.isEmpty() ? "0" : val(params.get(0));
+        String idClase = newTemp("numerus");
+        String valido = newTemp("bool");
+        emit(OpCode.GE, recv, "0", valido, "");
+        emit(OpCode.IF_FALSE, valido, "", etiquetas.get(0), "");
+        emit(OpCode.HEAP_READ, recv, "", idClase, "");
+        String fin = newLabel();
+        for (int i = 0; i < etiquetas.size(); i++) {
+            String cond = newTemp("bool");
+            emit(OpCode.EQ, idClase, String.valueOf(ids.get(i)), cond, "");
+            emit(OpCode.IF_TRUE, cond, "", etiquetas.get(i), "");
+        }
+        emit(OpCode.GOTO, "", "", etiquetas.get(0), "");
+        for (int i = 0; i < etiquetas.size(); i++) {
+            emit(OpCode.LABEL, "", "", etiquetas.get(i), "");
+            emit(OpCode.ASSIGN, base, "", "P", "");
+            emit(OpCode.CALL, rutinas.get(i), String.valueOf(params.size()), "", "");
+            emit(OpCode.ASSIGN, oldP, "", "P", "");
+            emit(OpCode.GOTO, "", "", fin, "");
+        }
+        emit(OpCode.LABEL, "", "", fin, "");
     }
 
     private String aTexto(String lugar) {
@@ -780,10 +850,10 @@ public class Lowering {
             emit(OpCode.STACK_READ, offset, "", t, "");
             return t;
         }
+        if (esNumero(lugar)) return lugar;
         if (lugar.contains("->") || lugar.contains(".") || lugar.endsWith("]")) {
             return refLugar(lugar);
         }
-        if (esNumero(lugar)) return lugar;
         return lugar;
     }
 
@@ -791,6 +861,7 @@ public class Lowering {
         if (lugar == null || lugar.equals("-")) return "0";
         if (lugar.startsWith("&")) return refLugar(lugar.substring(1));
         if (lugar.startsWith("\"") || lugar.startsWith("'")) return val(lugar);
+        if (esNumero(lugar)) return lugar;
 
         int pArrow = lugar.lastIndexOf("->");
         int pDot = lugar.lastIndexOf('.');
@@ -822,7 +893,8 @@ public class Lowering {
     }
 
     private void storeLugar(String lugar, String valor, boolean global) {
-        if (lugar == null || lugar.equals("-")) return;
+        // '_' descarta explícitamente el valor (p. ej. una lectura sin destino).
+        if (lugar == null || lugar.equals("-") || lugar.equals("_")) return;
         if (lugar.startsWith("&")) {
             storeLugar(lugar.substring(1), valor, global);
             return;
@@ -1009,18 +1081,12 @@ public class Lowering {
             l.clase = true;
             l.classId = cid;
             cid++;
-            int offset = 1;
-            for (Map.Entry<String, String> f : cz.campos.entrySet()) {
-                Campo c = new Campo();
-                c.nombre = f.getKey();
-                c.tipo = f.getValue();
-                c.offset = offset++;
-                c.size = 1;
-                l.campos.add(c);
-                l.porNombre.put(c.nombre, c);
-            }
-            l.size = offset;
             classLayouts.put(cz.nombre, l);
+        }
+        // Primero los padres: los campos heredados conservan su offset original.
+        Set<String> enProceso = new LinkedHashSet<>();
+        for (String nombre : new ArrayList<>(classLayouts.keySet())) {
+            layoutClase(nombre, enProceso);
         }
 
         for (Map.Entry<String, StructSimbolo> e : structsY.entrySet()) {
@@ -1057,6 +1123,42 @@ public class Lowering {
             l.size = offset;
             structLayouts.put(sy.name, l);
         }
+    }
+
+    /** Arma el layout de una clase: primero los campos del padre y luego los propios. */
+    private void layoutClase(String nombre, Set<String> enProceso) {
+        Layout l = classLayouts.get(nombre);
+        if (l == null || l.preparado) return;
+        if (!enProceso.add(nombre)) return;
+        ClaseZ cz = clases.get(nombre);
+        int offset = 1;
+        if (cz != null && cz.padre != null) {
+            Layout padre = classLayouts.get(cz.padre);
+            if (padre != null) {
+                layoutClase(cz.padre, enProceso);
+                for (Campo c : padre.campos) {
+                    if (l.porNombre.containsKey(c.nombre)) continue;
+                    l.campos.add(c);
+                    l.porNombre.put(c.nombre, c);
+                }
+                offset = padre.size;
+            }
+        }
+        if (cz != null) {
+            for (Map.Entry<String, String> f : cz.campos.entrySet()) {
+                if (l.porNombre.containsKey(f.getKey())) continue;
+                Campo c = new Campo();
+                c.nombre = f.getKey();
+                c.tipo = f.getValue();
+                c.offset = offset++;
+                c.size = 1;
+                l.campos.add(c);
+                l.porNombre.put(c.nombre, c);
+            }
+        }
+        l.size = offset;
+        l.preparado = true;
+        enProceso.remove(nombre);
     }
 
     private int tamanioStruct(String nombre) {
@@ -1106,6 +1208,7 @@ public class Lowering {
         String nombre;
         int size;
         boolean clase;
+        boolean preparado;
         int classId;
         final List<Campo> campos = new ArrayList<>();
         final Map<String, Campo> porNombre = new LinkedHashMap<>();

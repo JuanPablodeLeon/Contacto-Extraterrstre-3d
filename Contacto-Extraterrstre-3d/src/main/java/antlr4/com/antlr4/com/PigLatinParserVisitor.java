@@ -1,4 +1,4 @@
-// Generated from src/main/java/antlr4/com/PigLatinParser.g4 by ANTLR 4.13.2
+// Generated from PigLatinParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -130,6 +130,13 @@ public interface PigLatinParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitAcceso_Indice(PigLatinParserParser.Acceso_IndiceContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code NullVal}
+	 * labeled alternative in {@link PigLatinParserParser#expresion}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNullVal(PigLatinParserParser.NullValContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code CharVal}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.

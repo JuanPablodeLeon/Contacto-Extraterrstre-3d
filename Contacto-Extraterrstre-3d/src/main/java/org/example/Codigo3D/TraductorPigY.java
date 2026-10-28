@@ -157,7 +157,7 @@ public class TraductorPigY {
                 for (String ap : parNovus) {
                     emitir("PARAM", ap, "-", "-");
                 }
-                emitir("CALL", g.novusClase + "_new_" + parNovus.size(), String.valueOf(parNovus.size()), e, "HEAP", "");
+                emitir("CALL", nombreConstructor(g.novusClase, parNovus), String.valueOf(parNovus.size()), e, "HEAP", "");
             } else if (g.init != null) {
                 String v = genPig(g.init);
                 emitir("=", v, "-", e, GeneradorC.segmentoDe(g.tipo), "");
@@ -281,7 +281,7 @@ public class TraductorPigY {
                 List<String> par = argsNovus(sub);
                 for (String ap : par) emitir("PARAM", ap, "-", "-");
                 String t = nuevoTemp(clase);
-                emitir("CALL", clase + "_new_" + par.size(), String.valueOf(par.size()), t, "HEAP", "");
+                emitir("CALL", nombreConstructor(clase, par), String.valueOf(par.size()), t, "HEAP", "");
                 out.add(t);
             }
         }
@@ -507,10 +507,60 @@ public class TraductorPigY {
         return t.startsWith("&") ? t.substring(1) : t;
     }
 
+    /** Nombre de la rutina constructora según los tipos de los argumentos. */
+    public String nombreConstructor(String clase, List<String> args) {
+        ClaseZ cz = clasesZ.get(clase);
+        if (cz == null) throw new RuntimeException("Clase no definida: '" + clase + "'.");
+        List<String> tipos = new ArrayList<>();
+        for (String a : args) tipos.add(tipoLugar(a));
+        ClaseZ.MetodoZ ctor = cz.constructorPorTipos(tipos, clasesZ);
+        return ctor != null ? ctor.nombreC(clase) : clase + "_new_" + args.size();
+    }
+
+    /** Elige la sobrecarga de {@code nombre} cuyos parámetros aceptan los argumentos. */
+    private ClaseZ.MetodoInfo metodoPig(ClaseZ cz, String nombre, List<String> args) {
+        if (cz == null) return null;
+        for (ClaseZ.MetodoInfo mi : cz.metodosVisibles(nombre, clasesZ)) {
+            if (mi.metodo.params.size() != args.size()) continue;
+            boolean ok = true;
+            for (int i = 0; i < args.size(); i++) {
+                if (!compatiblePig(mi.metodo.params.get(i).tipo, tipoLugar(args.get(i)))) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) return mi;
+        }
+        return null;
+    }
+
+    private boolean compatiblePig(String param, String arg) {
+        if (param == null || arg == null) return true;
+        String p = param.startsWith("&") ? param.substring(1) : param;
+        String a = arg.startsWith("&") ? arg.substring(1) : arg;
+        if (p.equals(a)) return true;
+        if (a.equals("null")) {
+            return clasesZ.containsKey(p) || p.startsWith("series<") || p.equals("textum");
+        }
+        if (p.equals("textum")) {
+            return !a.startsWith("series<") && !clasesZ.containsKey(a);
+        }
+        if (p.equals("decimalis") && a.equals("numerus")) return true;
+        ClaseZ pc = clasesZ.get(p);
+        ClaseZ ac = clasesZ.get(a);
+        return pc != null && ac != null && ac.esSubclaseDe(p, clasesZ);
+    }
+
     private String tipoCampoY(String base, String campo) {
-        StructSimbolo s = structsY.get(tipoBase(base));
-        if (s == null) return "numerus";
-        return canonTipoY(s.tipoCampo(campo));
+        String tb = tipoBase(base);
+        StructSimbolo s = structsY.get(tb);
+        if (s != null && s.tieneCampo(campo)) return canonTipoY(s.tipoCampo(campo));
+        ClaseZ cz = clasesZ.get(tb);
+        if (cz != null) {
+            ClaseZ.CampoInfo ci = cz.buscarCampo(campo, clasesZ);
+            if (ci != null) return ci.tipo;
+        }
+        return "numerus";
     }
 
     private static String canonTipoY(Tipo t) {
@@ -1132,16 +1182,14 @@ public class TraductorPigY {
             for (PigLatinParserParser.ExpresionContext a : c.expresion()) args.add(genPig(a));
             for (String ap : args) emitir("PARAM", ap, "-", "-");
             String t = nuevoTemp(clase);
-            emitir("CALL", clase + "_new_" + args.size(), String.valueOf(args.size()), t, "HEAP", "");
+            emitir("CALL", nombreConstructor(clase, args), String.valueOf(args.size()), t, "HEAP", "");
             return t;
         }
         if (e instanceof PigLatinParserParser.Acceso_CadenaContext c) {
             String base = genPig(c.expresion());
             String tipoB = tipoLugar(base);
             String campo = c.ID().getText();
-            ClaseZ cz = clasesZ.get(tipoB);
-            String tCampo = (cz != null && cz.campos.containsKey(campo))
-                    ? cz.campos.get(campo) : "numerus";
+            String tCampo = tipoCampoY(base, campo);
             String t = nuevoTemp(tCampo);
             emitir("=.", base, campo, t, GeneradorC.segmentoDe(tCampo), "");
             return t;
@@ -1154,24 +1202,30 @@ public class TraductorPigY {
             List<String> args = new ArrayList<>();
             for (int i = 1; i < c.expresion().size(); i++) args.add(genPig(c.expresion(i)));
             if (cz != null) {
-                ClaseZ.MetodoZ mm = cz.metodo(metName, args.size());
-                if (mm == null) {
-                    throw new RuntimeException("Método no definido: '" + tipoB + "." + metName + "'.");
+                ClaseZ.MetodoInfo mi = metodoPig(cz, metName, args);
+                if (mi == null) {
+                    for (ClaseZ.MetodoInfo cand : cz.metodosVisibles(metName, clasesZ)) {
+                        if (cand.metodo.params.size() == args.size()) {
+                            mi = cand;
+                            break;
+                        }
+                    }
                 }
-                if (mm.params.size() != args.size()) {
-                    throw new RuntimeException("Aridad incorrecta: '" + tipoB + "." + metName
-                            + "' espera " + mm.params.size() + " pero se dieron " + args.size() + ".");
+                if (mi == null) {
+                    throw new RuntimeException("Método no definido: '" + tipoB + "." + metName + "'.");
                 }
                 emitir("PARAM", base, "-", "-");
                 for (String ap : args) emitir("PARAM", ap, "-", "-");
-                if (mm.retorno.equals("void")) {
-                    emitir("CALL", mm.nombreC(tipoB),
+                String ret = mi.metodo.retorno;
+                if (ret.equals("void")) {
+                    emitir("CALL", "V:" + mi.metodo.firma(),
                             String.valueOf(args.size() + 1), "-");
                     return "0";
                 }
-                String t = nuevoTemp(mm.retorno);
-                emitir("CALL", mm.nombreC(tipoB), String.valueOf(args.size() + 1), t,
-                        GeneradorC.segmentoDe(mm.retorno), "");
+                String t = nuevoTemp(ret);
+                emitir("CALL", "V:" + mi.metodo.firma(),
+                        String.valueOf(args.size() + 1), t,
+                        GeneradorC.segmentoDe(ret), "");
                 return t;
             }
             for (String ap : args) emitir("PARAM", ap, "-", "-");
@@ -1190,6 +1244,7 @@ public class TraductorPigY {
         }
         if (e instanceof PigLatinParserParser.VerumValorContext) return "verum";
         if (e instanceof PigLatinParserParser.FalsusValorContext) return "falsus";
+        if (e instanceof PigLatinParserParser.NullValContext) return "NULL";
         if (e instanceof PigLatinParserParser.IdentificadorContext c) {
             String r = resolver(c.ID().getText());
             return r == null ? c.ID().getText() : r;

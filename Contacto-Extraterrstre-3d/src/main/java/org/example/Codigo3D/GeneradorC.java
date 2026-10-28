@@ -490,7 +490,7 @@ public class GeneradorC {
         Bloque actual = null;
         StringBuilder c = new StringBuilder();
         c.append("/* =====================================================\n");
-        c.append(" * Traduccion PigLatin+Zetariano+Y? -> C estilo Nexus-Solairy\n");
+        c.append(" * Traduccion PigLatin+Zetariano+Y? \n");
         if (nombreFuente != null && !nombreFuente.isBlank()) {
             c.append(" * Fuente: ").append(nombreFuente).append("\n");
         }

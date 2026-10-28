@@ -5,9 +5,12 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.example.Codigo3D.Cuarteta;
-import org.example.Codigo3D.GeneradorC;
 import org.example.Codigo3D.TraductorPigY;
 import org.example.Codigo3D.TraductorZ;
+import org.example.Codigo3D.NewGenerate.C3DProgram;
+import org.example.Codigo3D.NewGenerate.CGenerator;
+import org.example.Codigo3D.Lowering;
+import org.example.Codigo3D.RiscVCodeGenerator;
 import org.example.Reports.CompilerError;
 import org.example.Reports.ErrorCollector;
 import org.example.Reports.ErrorReporter;
@@ -179,7 +182,7 @@ public class CompiladorService {
         for (Map.Entry<String, ZetarianoParserParser.InicioContext> e : arbolesZ.entrySet()) {
             String origen = e.getKey() + ".z";
             ErrorReporter rz = new ErrorReporter();
-            new SemanticoZ(rz).analizar(e.getValue());
+            new SemanticoZ(rz, clases, true).analizar(e.getValue());
             if (rz.tieneErrores()) {
                 reporter.semantico(1, "El import '" + origen + "' tiene errores semánticos:");
                 for (CompilerError ce : rz.getErrores()) {
@@ -209,10 +212,12 @@ public class CompiladorService {
                     "----- Hay errores semánticos (PigLatin) -----\n" + fmtErrores(reporter));
         }
         List<Cuarteta> cuartetas = trad.getCuartetas();
-        String codigo3D = GeneradorC.fmt3D(cuartetas);
-        GeneradorC genC = new GeneradorC(cuartetas, trad.getTempTypes(),
-                trad.getVarTypes(), trad.getGlobales(), trad.getRetFunc(), clases, structsY);
-        String codigoC = genC.generar(archivo == null ? "principal.pig" : archivo.getName());
+        Lowering lowering = new Lowering(cuartetas, trad.getTempTypes(),
+                trad.getVarTypes(), trad.getGlobales(), clases, structsY);
+        C3DProgram programa = lowering.lower();
+        String codigo3D = programa.toCodeString();
+        String codigoC = new CGenerator().generateC(programa);
+        String codigoRiscV = new RiscVCodeGenerator().generateRiscV(programa);
 
         StringBuilder sb = new StringBuilder();
         sb.append("✔ Ejecución exitosa: no se encontraron errores léxicos, sintácticos ni semánticos.\n");
@@ -226,9 +231,9 @@ public class CompiladorService {
             sb.append("Avisos (no bloquean la traducción):\n");
             for (String av : tz.getAvisos()) sb.append("  ! ").append(av).append("\n");
         }
-        sb.append("Ver: pestañas 'Codigo 3 Direciones' y 'Codigo C' | Reportes > Tokens / Errores.\n");
+        sb.append("Ver: pestañas 'Codigo 3 Direciones', 'Codigo C' y 'Codigo RISC-V' | Reportes > Tokens / Errores.\n");
         return new ResultadoCompilacion(true, "PigLatin", tokens, reporter.getErrores(),
-                cuartetas, codigo3D, codigoC, sb.toString());
+                cuartetas, codigo3D, codigoC, sb.toString(), codigoRiscV);
     }
 
     private ResultadoCompilacion compilarY(File archivo, String codigo) {
@@ -256,6 +261,14 @@ public class CompiladorService {
                 List.of(), "", "", consola);
     }
 
+    /** Modelo de clases para compilar un .z aislado (sin imports). */
+    private Map<String, ClaseZ> clasesLocalesZ(ZetarianoParserParser.InicioContext tree) {
+        Map<String, ClaseZ> clases = new LinkedHashMap<>();
+        ClaseZ modelo = ClaseZ.desde("?", tree);
+        if (modelo != null) clases.put(modelo.nombre, modelo);
+        return clases;
+    }
+
     private ResultadoCompilacion compilarZ(File archivo, String codigo) {
         ErrorReporter reporter = new ErrorReporter();
         ZetarianoParserParser.InicioContext tree = parseZ(codigo, reporter);
@@ -271,7 +284,7 @@ public class CompiladorService {
             reporter.semantico(1, "El archivo debe llamarse como la clase: se encontró 'class "
                     + clase + "' pero el archivo es '" + archivo.getName() + "'.");
         }
-        new SemanticoZ(reporter).analizar(tree);
+        new SemanticoZ(reporter, clasesLocalesZ(tree), false).analizar(tree);
         if (reporter.tieneErrores()) {
             return fallo("Zetariano", tokens, reporter,
                     "----- Hay errores semánticos (Zetariano) -----\n" + fmtErrores(reporter));
@@ -446,10 +459,18 @@ public class CompiladorService {
                 if (ids.isEmpty()) continue;
                 if (b.NOVUS() != null) {
                     String nombre = ids.get(0).getText();
-                    String tipo = ids.size() > 1 ? ids.get(1).getText() : "struct";
+                    String runtime = ids.size() > 1 ? ids.get(1).getText() : "struct";
+                    String tipo = b.tipos_varios() != null
+                            ? b.tipos_varios().getText() : runtime;
                     vistos.add(nombre);
                     out.add(new TraductorPigY.GlobalDecl(nombre, tipo, null,
-                            null, null, null, tipo, b.bloque_objt()));
+                            null, null, null, runtime, b.bloque_objt()));
+                } else if (b.NULL_VAL() != null) {
+                    String nombre = ids.get(0).getText();
+                    String tipo = b.tipos_varios() != null
+                            ? b.tipos_varios().getText() : "numerus";
+                    vistos.add(nombre);
+                    out.add(new TraductorPigY.GlobalDecl(nombre, tipo, null));
                 } else if (b.tipos() != null) {
                     String nombre = ids.get(0).getText();
                     String tipo = b.tipos().getText();
@@ -457,6 +478,11 @@ public class CompiladorService {
                     PigLatinParserParser.ExpresionContext init =
                             b.expresion() == null ? null : b.expresion();
                     out.add(new TraductorPigY.GlobalDecl(nombre, tipo, init));
+                } else if (b.expresion() != null && b.tipos_varios() != null) {
+                    String nombre = ids.get(0).getText();
+                    String tipo = b.tipos_varios().getText();
+                    vistos.add(nombre);
+                    out.add(new TraductorPigY.GlobalDecl(nombre, tipo, b.expresion()));
                 } else if (b.expresion() != null && ids.size() == 1) {
                     String nombre = ids.get(0).getText();
                     vistos.add(nombre);

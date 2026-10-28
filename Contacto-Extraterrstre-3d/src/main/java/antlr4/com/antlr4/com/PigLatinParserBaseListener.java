@@ -1,4 +1,4 @@
-// Generated from src/main/java/antlr4/com/PigLatinParser.g4 by ANTLR 4.13.2
+// Generated from PigLatinParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -240,6 +240,18 @@ public class PigLatinParserBaseListener implements PigLatinParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitAcceso_Indice(PigLatinParserParser.Acceso_IndiceContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterNullVal(PigLatinParserParser.NullValContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitNullVal(PigLatinParserParser.NullValContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

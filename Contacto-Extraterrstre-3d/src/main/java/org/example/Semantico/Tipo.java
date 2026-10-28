@@ -1,5 +1,8 @@
 package org.example.Semantico;
 
+import org.example.Ejecutor.ClaseZ;
+
+import java.util.Map;
 import java.util.Objects;
 
 // Tipos para los tres lengujes
@@ -72,6 +75,52 @@ public class Tipo {
     public static boolean asignablePig(Tipo destino, Tipo origen) {
         return asignableNucleo(destino, origen, true);
     }
+
+    /**
+     * Asignabilidad que tiene en cuenta la jerarquía de clases.
+     * En Zetariano y PigLatin un objeto de una subclase es asignable a una
+     * variable cuyo tipo estático sea una superclase.
+     */
+    public static boolean asignablePig(Tipo destino, Tipo origen,
+                                       Map<String, ClaseZ> clases) {
+        return asignableJerarquia(destino, origen, clases, true);
+    }
+
+    public static boolean asignableZ(Tipo destino, Tipo origen,
+                                     Map<String, ClaseZ> clases) {
+        return asignableJerarquia(destino, origen, clases, false);
+    }
+
+    private static boolean asignableJerarquia(Tipo destino, Tipo origen,
+                                              Map<String, ClaseZ> clases,
+                                              boolean cadenaAceptaTodo) {
+        if (destino.esError() || origen.esError()) return true;
+        if (destino.base == Base.SERIES && origen.base == Base.SERIES) {
+            return asignableJerarquia(destino.elementos, origen.elementos, clases,
+                    cadenaAceptaTodo);
+        }
+        if (origen.base == Base.NULL) {
+            return destino.base == Base.STRUCT || destino.base == Base.SERIES
+                    || destino.base == Base.CADENA;
+        }
+        if (destino.base == Base.STRUCT && origen.base == Base.STRUCT) {
+            if (Objects.equals(destino.nombreStruct, origen.nombreStruct)) return true;
+            if (clases == null) return false;
+            ClaseZ hijo = clases.get(origen.nombreStruct);
+            return hijo != null && hijo.esSubclaseDe(destino.nombreStruct, clases);
+        }
+        if (!destino.esPrimitivo() || !origen.esPrimitivo()) {
+            return destino.base == origen.base
+                    && Objects.equals(destino.nombreStruct, origen.nombreStruct);
+        }
+        if (cadenaAceptaTodo && destino.base == Base.CADENA) return true;
+        if (origen.base == Base.CADENA) return destino.base == Base.CADENA;
+        if (destino.base == Base.FLOTANTE) {
+            return origen.base == Base.FLOTANTE || origen.base == Base.ENTERO;
+        }
+        return destino.base == origen.base;
+    }
+
     public static boolean asignableZ(Tipo destino, Tipo origen) {
         if (destino.esError() || origen.esError()) return true;
         if (destino.base == Base.SERIES && origen.base == Base.SERIES) {

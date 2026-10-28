@@ -78,7 +78,27 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
                 String clase = ids.size() > 1 ? ids.get(1).getText() : "?";
                 List<Tipo> args = tiposBloqueObjt(b.bloque_objt());
                 validarConstructor(clase, args, ln);
-                declarar(nombre, Tipo.struct(clase), ln);
+                Tipo runtime = Tipo.struct(clase);
+                Tipo estatico = b.tipos_varios() == null
+                        ? runtime : Tipo.desdePig(b.tipos_varios().getText(), tabla, ln, errores);
+                if (!estatico.esError() && !asignable(estatico, runtime)) {
+                    errores.semantico(ln, "Un 'novus " + clase + "' no es asignable a '"
+                            + nombre + "' de tipo " + estatico + ".");
+                }
+                declarar(nombre, estatico, ln);
+                return;
+            }
+            if (b.NULL_VAL() != null) {
+                Tipo estatico = b.tipos_varios() == null
+                        ? Tipo.ERROR : Tipo.desdePig(b.tipos_varios().getText(), tabla, ln, errores);
+                if (!estatico.esError() && estatico.base != Tipo.Base.STRUCT
+                        && estatico.base != Tipo.Base.SERIES
+                        && estatico.base != Tipo.Base.CADENA) {
+                    errores.semantico(ln, "null solo es asignable a referencias (objetos, "
+                            + "String, series): no es compatible con '" + nombre + "' de "
+                            + estatico + ".");
+                }
+                declarar(nombre, estatico, ln);
                 return;
             }
             if (b.tipos() != null) {
@@ -86,10 +106,21 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
                 if (b.expresion() != null) {
                     Tipo real = visit(b.expresion());
                     if (!declarado.esError() && !real.esError()
-                            && !Tipo.asignablePig(declarado, real)) {
+                            && !asignable(declarado, real)) {
                         errores.semantico(ln, "El tipo " + real + " no es compatible con '"
                                 + nombre + "' de " + declarado + ".");
                     }
+                }
+                declarar(nombre, declarado, ln);
+                return;
+            }
+            if (b.expresion() != null && b.tipos_varios() != null) {
+                Tipo declarado = Tipo.desdePig(b.tipos_varios().getText(), tabla, ln, errores);
+                Tipo real = visit(b.expresion());
+                if (!declarado.esError() && !real.esError()
+                        && !asignable(declarado, real)) {
+                    errores.semantico(ln, "El tipo " + real + " no es compatible con '"
+                            + nombre + "' de " + declarado + ".");
                 }
                 declarar(nombre, declarado, ln);
                 return;
@@ -139,6 +170,10 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
         }
     }
 
+    private boolean asignable(Tipo destino, Tipo origen) {
+        return Tipo.asignablePig(destino, origen, clasesZ);
+    }
+
     private void declarar(String nombre, Tipo tipo, int ln) {
         declararVar(new VarSymbol(nombre, ln, tipo));
     }
@@ -181,7 +216,7 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
         for (int i = 0; i < campos.size(); i++) {
             Tipo esp = s.campos.get(campos.get(i));
             Tipo real = reales.get(i);
-            if (!esp.esError() && !real.esError() && !Tipo.asignablePig(esp, real)) {
+            if (!esp.esError() && !real.esError() && !asignable(esp, real)) {
                 errores.semantico(ln, "El atributo '" + campos.get(i) + "' espera " + esp
                         + " pero se dio " + real + ".");
             }
@@ -211,7 +246,7 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
         }
         for (PigLatinParserParser.ExpresionContext v : init.expresion()) {
             Tipo real = visit(v);
-            if (!elem.esError() && !real.esError() && !Tipo.asignablePig(elem, real)) {
+            if (!elem.esError() && !real.esError() && !asignable(elem, real)) {
                 errores.semantico(linea(v), "Valor " + real + " incompatible con la serie '"
                         + nombre + "' de " + elem + ".");
             }
@@ -269,7 +304,7 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
         for (int i = 0; i < args.size(); i++) {
             Tipo esp = desdeCanon(m.params.get(i).tipo);
             Tipo real = args.get(i);
-            if (!esp.esError() && !real.esError() && !Tipo.asignablePig(esp, real)) return false;
+            if (!esp.esError() && !real.esError() && !asignable(esp, real)) return false;
         }
         return true;
     }
@@ -374,7 +409,7 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
             Tipo tIter = Tipo.desdePig(ctx.tipos().getText(), tabla, linea(ctx), errores);
             Tipo tInit = visit(ctx.expresion(0));
             String var = ctx.ID().getText();
-            if (!tIter.esError() && !tInit.esError() && !Tipo.asignablePig(tIter, tInit)) {
+            if (!tIter.esError() && !tInit.esError() && !asignable(tIter, tInit)) {
                 errores.semantico(linea(ctx), "El iterador '" + var + "' (" + tIter
                         + ") no acepta " + tInit + ".");
             }
@@ -430,7 +465,7 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
             Tipo esperado = tipoCampoEstructura(vs.type.elementos.nombreStruct,
                     ids.get(ids.size() - 1).getText(), ln);
             if (esperado != null && !esperado.esError() && !real.esError()
-                    && !Tipo.asignablePig(esperado, real)) {
+                    && !asignable(esperado, real)) {
                 errores.semantico(ln, "No se puede asignar " + real + " al atributo '"
                         + ids.get(ids.size() - 1).getText() + "' de " + esperado + ".");
             }
@@ -453,7 +488,7 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
             }
             Tipo real = visit(exprs.get(exprs.size() - 1));
             if (!vs.type.elementos.esError() && !real.esError()
-                    && !Tipo.asignablePig(vs.type.elementos, real)) {
+                    && !asignable(vs.type.elementos, real)) {
                 errores.semantico(ln, "No se puede asignar " + real + " a la serie '"
                         + ids.get(0).getText() + "' de " + vs.type.elementos + ".");
             }
@@ -472,7 +507,7 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
             }
             Tipo esperado = tipoCampoEstructura(vs.type.nombreStruct, ids.get(1).getText(), ln);
             if (esperado != null && !esperado.esError() && !real.esError()
-                    && !Tipo.asignablePig(esperado, real)) {
+                    && !asignable(esperado, real)) {
                 errores.semantico(ln, "No se puede asignar " + real + " al atributo '"
                         + ids.get(1).getText() + "' de " + esperado + ".");
             }
@@ -484,7 +519,7 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
             errores.semantico(ln, "La variable no ha sido declarada: '" + ids.get(0).getText() + "'.");
             return Tipo.ERROR;
         }
-        if (!vs.type.esError() && !real.esError() && !Tipo.asignablePig(vs.type, real)) {
+        if (!vs.type.esError() && !real.esError() && !asignable(vs.type, real)) {
             errores.semantico(ln, "Valores no compatibles: " + real + " <-> " + vs.type + ".");
         }
         return vs.type;
@@ -494,7 +529,10 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
         StructSimbolo s = tabla.obtenerStruct(tipoStruct);
         if (s != null && s.tieneCampo(campo)) return s.tipoCampo(campo);
         ClaseZ cz = clasesZ.get(tipoStruct);
-        if (cz != null && cz.campos.containsKey(campo)) return desdeCanon(cz.campos.get(campo));
+        if (cz != null) {
+            ClaseZ.CampoInfo ci = cz.buscarCampo(campo, clasesZ);
+            if (ci != null) return desdeCanon(ci.tipo);
+        }
         if (s == null && cz == null) {
             errores.semantico(ln, "Tipo no declarado: '" + tipoStruct + "'.");
             return null;
@@ -606,6 +644,21 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
         Tipo r = visit(ctx.expresion(1));
         String op = ctx.ops1.getText();
         if (l.esError() || r.esError()) return Tipo.BOOL;
+        if (l.base == Tipo.Base.NULL || r.base == Tipo.Base.NULL) {
+            Tipo otro = l.base == Tipo.Base.NULL ? r : l;
+            if (otro.base == Tipo.Base.STRUCT || otro.base == Tipo.Base.NULL
+                    || otro.base == Tipo.Base.SERIES || otro.base == Tipo.Base.CADENA) {
+                return Tipo.BOOL;
+            }
+            errores.semantico(linea(ctx), "No se puede comparar " + otro + " con null.");
+            return Tipo.BOOL;
+        }
+        if (l.base == Tipo.Base.STRUCT && r.base == Tipo.Base.STRUCT) {
+            return Tipo.BOOL;
+        }
+        if (l.base == Tipo.Base.SERIES && r.base == Tipo.Base.SERIES) {
+            return Tipo.BOOL;
+        }
         if (!l.esPrimitivo() || !r.esPrimitivo()) {
             errores.semantico(linea(ctx), "El operador '" + op + "' solo aplica a tipos primitivos.");
         } else if ((l.base == Tipo.Base.CADENA) != (r.base == Tipo.Base.CADENA)) {
@@ -682,21 +735,27 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
         String met = ctx.ID().getText();
         List<Tipo> args = new ArrayList<>();
         for (int i = 1; i < ctx.expresion().size(); i++) args.add(visit(ctx.expresion(i)));
-        ClaseZ.MetodoZ mm = cz.metodo(met, args.size());
-        if (mm == null) {
-            errores.semantico(linea(ctx), "Método no definido: '" + base.nombreStruct + "." + met + "'.");
+        List<ClaseZ.MetodoInfo> cands = cz.metodosVisibles(met, clasesZ);
+        ClaseZ.MetodoInfo elegido = null;
+        for (ClaseZ.MetodoInfo mi : cands) {
+            if (mi.metodo.params.size() == args.size()
+                    && paramsCompatiblesZ(mi.metodo, args)) {
+                elegido = mi;
+                break;
+            }
+        }
+        if (elegido == null) {
+            if (cands.isEmpty()) {
+                errores.semantico(linea(ctx), "Método no definido: '"
+                        + base.nombreStruct + "." + met + "'.");
+            } else {
+                errores.semantico(linea(ctx), "Los argumentos de '"
+                        + base.nombreStruct + "." + met
+                        + "' no son compatibles con sus parámetros.");
+            }
             return Tipo.ERROR;
         }
-        if (mm.params.size() != args.size()) {
-            errores.semantico(linea(ctx), "Aridad incorrecta: '" + base.nombreStruct + "." + met
-                    + "' espera " + mm.params.size() + " pero se dieron " + args.size() + ".");
-            return desdeCanon(mm.retorno);
-        }
-        if (!paramsCompatiblesZ(mm, args)) {
-            errores.semantico(linea(ctx), "Los argumentos de '" + base.nombreStruct + "." + met
-                    + "' no son compatibles con sus parámetros.");
-        }
-        return desdeCanon(mm.retorno);
+        return desdeCanon(elegido.metodo.retorno);
     }
 
     @Override
@@ -731,6 +790,11 @@ public class SemanticoPig extends PigLatinParserBaseVisitor<Tipo> {
     @Override
     public Tipo visitFalsusValor(PigLatinParserParser.FalsusValorContext ctx) {
         return Tipo.BOOL;
+    }
+
+    @Override
+    public Tipo visitNullVal(PigLatinParserParser.NullValContext ctx) {
+        return Tipo.NULL;
     }
 
     @Override

@@ -1,4 +1,4 @@
-// Generated from src/main/java/antlr4/com/PigLatinParser.g4 by ANTLR 4.13.2
+// Generated from PigLatinParser.g4 by ANTLR 4.13.2
 package antlr4.com.antlr4.com;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -209,6 +209,18 @@ public interface PigLatinParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitAcceso_Indice(PigLatinParserParser.Acceso_IndiceContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code NullVal}
+	 * labeled alternative in {@link PigLatinParserParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void enterNullVal(PigLatinParserParser.NullValContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code NullVal}
+	 * labeled alternative in {@link PigLatinParserParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void exitNullVal(PigLatinParserParser.NullValContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code CharVal}
 	 * labeled alternative in {@link PigLatinParserParser#expresion}.

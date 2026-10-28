@@ -30,6 +30,7 @@ PRIVATE: 'private';
 PROTECTED: 'protected';
 OVERRIDE: '@Override';
 THIS: 'this';
+SUPER: 'super';
 EXTENDS: 'extends';
 
 LPAREN: '(';

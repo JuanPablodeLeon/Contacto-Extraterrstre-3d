@@ -10,17 +10,20 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MainFrame extends JFrame {
@@ -32,6 +35,11 @@ public class MainFrame extends JFrame {
     private final JTextArea codigoCTextArea;
     private final JTextArea codigoRiscVTextArea;
     private final JTextArea ejecucionRiscVTextArea;
+    // Entrada de texto para el programa RISC-V en ejecución (stdin de RARS)
+    private final JTextField entradaRiscVField = new JTextField();
+    private final JButton enviarRiscVButton = new JButton("Enviar");
+    private Process procesoRiscV;
+    private BufferedWriter entradaRiscV;
     private final JTabbedPane tabbetPaneDown;
     private final MenuBar menuBar;
     private final ProjectManager projectManager;
@@ -63,7 +71,7 @@ public class MainFrame extends JFrame {
         tabbetPaneDown.add("Codigo 3 Direciones", new JScrollPane(codigo3DireccionesTextArea));
         tabbetPaneDown.add("Codigo C", new JScrollPane(codigoCTextArea));
         tabbetPaneDown.add("Codigo RISC-V", new JScrollPane(codigoRiscVTextArea));
-        tabbetPaneDown.add("Ejecucion RISC-V", new JScrollPane(ejecucionRiscVTextArea));
+        tabbetPaneDown.add("Ejecucion RISC-V", crearPanelEjecucionRiscV());
         cleanConsole();
 
         menuBar = new MenuBar();
@@ -212,9 +220,9 @@ public class MainFrame extends JFrame {
 
     private void copiarCOdigoC(){
         if (tabbetPaneDown.getSelectedIndex() != 2){
-           JOptionPane.showMessageDialog(this, "Cambia a la pestaña Codigo C", "Copiar C", JOptionPane.WARNING_MESSAGE);
-         //  tabbetPaneDown.setSelectedIndex(2);
-           return;
+            JOptionPane.showMessageDialog(this, "Cambia a la pestaña Codigo C", "Copiar C", JOptionPane.WARNING_MESSAGE);
+            //  tabbetPaneDown.setSelectedIndex(2);
+            return;
         }
 
         if (lastResultado == null || !lastResultado.tieneTraduccion()) {
@@ -703,6 +711,53 @@ public class MainFrame extends JFrame {
         codigoRiscVTextArea.setText("CODIGO RISC-V\n\n");
     }
 
+    /**
+     * Panel de la pestaña "Ejecucion RISC-V": salida del programa arriba y,
+     * abajo, un campo para escribir lo que el programa pida leer (stdin).
+     */
+    private JPanel crearPanelEjecucionRiscV() {
+        ejecucionRiscVTextArea.setEditable(false);
+
+        entradaRiscVField.setEnabled(false);
+        enviarRiscVButton.setEnabled(false);
+        entradaRiscVField.addActionListener(e -> enviarEntradaRiscV());
+        enviarRiscVButton.addActionListener(e -> enviarEntradaRiscV());
+
+        JPanel barra = new JPanel(new BorderLayout(6, 0));
+        barra.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
+        barra.add(new JLabel("Entrada:"), BorderLayout.WEST);
+        barra.add(entradaRiscVField, BorderLayout.CENTER);
+        barra.add(enviarRiscVButton, BorderLayout.EAST);
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(new JScrollPane(ejecucionRiscVTextArea), BorderLayout.CENTER);
+        panel.add(barra, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    /** Envía la línea escrita al stdin del proceso RARS y la muestra en la consola. */
+    private void enviarEntradaRiscV() {
+        if (procesoRiscV == null || entradaRiscV == null || !procesoRiscV.isAlive()) return;
+        String texto = entradaRiscVField.getText();
+        try {
+            entradaRiscV.write(texto);
+            entradaRiscV.write("\n");
+            entradaRiscV.flush();
+            ejecucionRiscVTextArea.append(texto + "\n");
+            ejecucionRiscVTextArea.setCaretPosition(ejecucionRiscVTextArea.getDocument().getLength());
+            entradaRiscVField.setText("");
+        } catch (IOException ex) {
+            ejecucionRiscVTextArea.append("\n[No se pudo enviar la entrada: " + ex.getMessage() + "]\n");
+        }
+        entradaRiscVField.requestFocusInWindow();
+    }
+
+    private void habilitarEntradaRiscV(boolean activa) {
+        entradaRiscVField.setEnabled(activa);
+        enviarRiscVButton.setEnabled(activa);
+        if (activa) entradaRiscVField.requestFocusInWindow();
+    }
+
     private void updateRunButtonState() {
         Component sel = editorTabs.getSelectedComponent();
         boolean soloPig = sel instanceof PigLatinEditor;
@@ -710,7 +765,7 @@ public class MainFrame extends JFrame {
 
         boolean habilitado = soloPig || soloRiscv;
         menuBar.setRunEnabled(habilitado);
-       // menuBar.setRunEnabled(soloRiscv);
+        // menuBar.setRunEnabled(soloRiscv);
         if (soloPig) {
             menuBar.getRunButton().setToolTipText("Ejecutar .pig (valida imports .y/.z vía proyecto.xml y genera C3D + C)");
         } else if(soloRiscv){
@@ -1009,11 +1064,17 @@ public class MainFrame extends JFrame {
         tabbetPaneDown.setSelectedIndex(4);
         ejecucionRiscVTextArea.setText("Ejecutando programa RISC-V...\n");
 
-        // Ejecutar RARS en segundo plano
-        SwingWorker<String, Void> worker = new SwingWorker<>() {
+        // Si quedó una ejecución anterior viva, se detiene.
+        if (procesoRiscV != null && procesoRiscV.isAlive()) {
+            procesoRiscV.destroyForcibly();
+        }
+
+        // Ejecutar RARS en segundo plano, mostrando la salida en vivo y
+        // dejando abierta la entrada estándar para lo que pida el programa.
+        SwingWorker<Void, String> worker = new SwingWorker<>() {
 
             @Override
-            protected String doInBackground() throws Exception {
+            protected Void doInBackground() throws Exception {
                 ProcessBuilder pb = new ProcessBuilder(
                         "java",
                         "-jar",
@@ -1022,67 +1083,61 @@ public class MainFrame extends JFrame {
                         "me",
                         archivoAsm.getAbsolutePath()
                 );
-
                 pb.redirectErrorStream(true);
 
                 Process proceso = pb.start();
-                StringBuilder salida = new StringBuilder();
+                procesoRiscV = proceso;
+                entradaRiscV = new BufferedWriter(new OutputStreamWriter(
+                        proceso.getOutputStream(), StandardCharsets.UTF_8));
+                SwingUtilities.invokeLater(() -> habilitarEntradaRiscV(true));
 
-                try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(
-                                proceso.getInputStream(),
-                                StandardCharsets.UTF_8
-                        ))) {
-
-                    String linea;
-                    while ((linea = reader.readLine()) != null) {
-                        salida.append(linea).append("\n");
+                // Se lee por bloques (no por líneas) para que un prompt sin
+                // salto de línea, como "Ingrese texto: ", se vea de inmediato.
+                try (InputStreamReader reader = new InputStreamReader(
+                        proceso.getInputStream(), StandardCharsets.UTF_8)) {
+                    char[] buf = new char[512];
+                    int n;
+                    while ((n = reader.read(buf)) != -1) {
+                        publish(new String(buf, 0, n));
                     }
                 }
 
                 int codigoSalida = proceso.waitFor();
-
                 if (codigoSalida != 0) {
-                    salida.append("\nRARS finalizó con código: ")
-                            .append(codigoSalida)
-                            .append("\n");
+                    publish("\nRARS finalizó con código: " + codigoSalida + "\n");
                 }
+                return null;
+            }
 
-                return salida.toString();
+            @Override
+            protected void process(List<String> trozos) {
+                for (String t : trozos) {
+                    ejecucionRiscVTextArea.append(t);
+                }
+                ejecucionRiscVTextArea.setCaretPosition(
+                        ejecucionRiscVTextArea.getDocument().getLength());
             }
 
             @Override
             protected void done() {
+                habilitarEntradaRiscV(false);
                 try {
-                    String resultado = get();
-
-                    if (resultado.isBlank()) {
-                        ejecucionRiscVTextArea.setText(
-                                "RARS terminó sin producir salida de texto.\n"
-                                        + "\nArchivo RISC-V guardado en:\n"
-                                        + archivoAsm.getAbsolutePath()
-                        );
-                    } else {
-                        ejecucionRiscVTextArea.setText(resultado
-                                + "\nArchivo RISC-V guardado en:\n"
-                                + archivoAsm.getAbsolutePath());
-                    }
-
+                    if (entradaRiscV != null) entradaRiscV.close();
+                } catch (IOException ignored) {
+                    // El proceso ya terminó.
+                }
+                try {
+                    get();
+                    ejecucionRiscVTextArea.append("\nArchivo RISC-V guardado en:\n"
+                            + archivoAsm.getAbsolutePath());
                 } catch (Exception ex) {
-                    ejecucionRiscVTextArea.setText(
-                            "Error al ejecutar RARS:\n"
-                                    + ex.getMessage()
-                                    + "\n\nArchivo RISC-V en:\n"
-                                    + archivoAsm.getAbsolutePath()
-                    );
-
+                    ejecucionRiscVTextArea.append("\nError al ejecutar RARS:\n"
+                            + ex.getMessage()
+                            + "\n\nArchivo RISC-V en:\n"
+                            + archivoAsm.getAbsolutePath());
                 } finally {
                     ejecucionRiscVTextArea.setCaretPosition(
-                            ejecucionRiscVTextArea.getDocument().getLength()
-                    );
-
-                    // El archivo queda en la carpeta temporal y se elimina al
-                    // cerrar la aplicación.
+                            ejecucionRiscVTextArea.getDocument().getLength());
                 }
             }
         };
@@ -1143,4 +1198,3 @@ public class MainFrame extends JFrame {
         throw new IOException("No se encontró rars1_6.jar en el classpath ni en lib/.");
     }
 }
-

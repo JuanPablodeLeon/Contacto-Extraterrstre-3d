@@ -10,18 +10,21 @@ bloc_main: PUBLIC CLASS ID (EXTENDS ID)? LLLAVE instrucciones* RLLAVE
              ;
 
            // public <id> (...){...} <- Puede o no tener parametros, y puede o no tener instrucciones dentro
-instrucciones: OVERRIDE? PUBLIC ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
-            // public void <id> (...) {...}
-             | OVERRIDE? PUBLIC VOID ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
-            // public <tipo> <id> (...) {...}
-             | OVERRIDE? PUBLIC (tipos | ID) ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
+instrucciones: OVERRIDE? modificador? ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
+            // [modificador] void <id> (...) {...}
+             | OVERRIDE? modificador? VOID ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
+            // [modificador] <tipo> <id> (...) {...}
+             | OVERRIDE? modificador? (tipos | ID) ID LPAREN param_var? RPAREN LLLAVE instruccion* RLLAVE
             //declaracion de variables
-             | encapsulamiento? declaracion+
+             | modificador? declaracion+
              ;
 
-encapsulamiento: PUBLIC
-               | PRIVATE
-               | PROTECTED
+modificador: PUBLIC
+           | PRIVATE
+           | PROTECTED
+           ;
+
+encapsulamiento: modificador
                ;
 
 instruccion: declaracion
@@ -52,6 +55,8 @@ instruccion: declaracion
            | CONTINUE PUNTO_COMA
           // return <valor> ; || return ;
            | RETURN expresion? PUNTO_COMA
+          // super(...) ; <- debe ser la primera instruccion del constructor
+           | SUPER LPAREN params? RPAREN PUNTO_COMA
            | expresion PUNTO_COMA
            ;
 
@@ -85,7 +90,14 @@ declaracion: (tipos | ID) ID ASIGNACION expresion PUNTO_COMA
            ;
 
          // <id> += <value> ;
-asignacion: ID SUMA_IGL expresion PUNTO_COMA
+asignacion: THIS PUNTO ID SUMA_IGL expresion PUNTO_COMA
+          | THIS PUNTO ID RESTA_IGL expresion PUNTO_COMA
+          | THIS PUNTO ID MULT_IGL expresion PUNTO_COMA
+          | THIS PUNTO ID ASIGNACION expresion PUNTO_COMA
+          | THIS PUNTO ID INCREMENTO PUNTO_COMA
+          | THIS PUNTO ID DECREMENTO PUNTO_COMA
+        // <id> += <value> ;
+          | ID SUMA_IGL expresion PUNTO_COMA
         // <id> -= <value> ;
           | ID RESTA_IGL expresion PUNTO_COMA
         // <id> *= <value> ;
@@ -126,6 +138,8 @@ expresion: // <exp>.<id>
          | expresion INTERRG expresion DOS_PUNTOS expresion
          // new <tipo>[<valor>]...
          | NEW tipos (LCORCH expresion RCORCH)+
+         // new <Clase>[<valor>]...  (arreglo de objetos)
+         | NEW ID (LCORCH expresion RCORCH)+
          // new <id>(...)
          | NEW ID LPAREN params? RPAREN
        // <valor> * / <valor>
@@ -142,18 +156,13 @@ expresion: // <exp>.<id>
          | expresion ops1=(MENOR | MAYOR) expresion //# MenorMayor
          // <valor> (&& ||) <valor>
          | expresion ops1=(AND | OR) expresion //# AndOr
-
-        // <id>[<value>]
-    //     | ID LCORCH expresion RCORCH
-        // <id>.<id>
-     //    | ID PUNTO ID
-        // <id>.<id>(...)
-     //    | ID PUNTO ID LPAREN params? RPAREN
-
-        // <id>(...)
         // this.<expresion>
          | THIS PUNTO expresion
-        // <id> () <- Puede o no contener paramostros
+        // super.metodo(...) / super.atributo
+         | SUPER PUNTO ID LPAREN params? RPAREN
+         | SUPER PUNTO ID
+         | THIS
+        // <tipo> <id> (...)
          | ID LPAREN params? RPAREN
          | TRUE
          | FALSE
